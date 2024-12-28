@@ -1,0 +1,6 @@
+[submodule "source/GrainflowLib"]
+	path = source/GrainflowLib
+	url = https://github.com/composingcap/GrainflowLib
+[submodule "source/pure-data"]
+	path = source/pure-data
+	url = https://github.com/pure-data/pure-data.git
