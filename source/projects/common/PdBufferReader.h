@@ -24,7 +24,7 @@ namespace Grainflow
 			}
 			buffer_info->buffer_frames = size;
 			buffer_info->sample_rate_adjustment = 1;
-			buffer_info->samplerate = 48000;
+			buffer_info->samplerate = io_config.samplerate;
 			buffer_info->n_channels = 1;
 			return true;
 		}
@@ -45,7 +45,8 @@ namespace Grainflow
 
 			for (int i = 0; i < size; ++i)
 			{
-				samples[i] = vec[(int)(positions[i]) % bsize].w_float;
+				auto mix = positions[i]- std::floorf(positions[i]);
+				samples[i] = vec[(int)(positions[i]) % bsize].w_float * (1-mix) + vec[(int)(positions[i]+1) % bsize].w_float * mix;
 			}
 		};
 

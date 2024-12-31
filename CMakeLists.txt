@@ -25,7 +25,7 @@ set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 include(${CMAKE_CURRENT_SOURCE_DIR}/pd.cmake)
 
 set_pd_sources("${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src")
-set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/externals/)
+set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/grainflow/)
 set(PD_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src/pd.lib)
 include_directories(grainflowLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source/grainflowLib)
 

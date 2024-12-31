@@ -27,6 +27,8 @@ typedef struct _grainflow_tilde
 	std::array<std::vector<t_sample*>, 4> input_channel_ptrs;
 	std::array<std::vector<t_sample*>, 8> output_channel_ptrs;
 	std::string default_buffer_name;
+
+	bool state = false;
 } t_grainflow_tilde;
 
 
@@ -107,6 +109,7 @@ void grainflow_setup_outputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sam
 		for (int j = 0; j < x->n_grains; ++j)
 		{
 			x->output_channel_ptrs[i][j] = &(outputs[i]->s_vec[j * chan_size]);
+			std::fill_n(x->output_channel_ptrs[i][j], chan_size, 0.0f);
 		}
 	}
 
@@ -125,17 +128,23 @@ t_int* grainflow_tilde_perform(t_int* w)
 	auto x = reinterpret_cast<t_grainflow_tilde*>(w[1]);
 	auto inputs = reinterpret_cast<t_signal**>(w[2]);
 	auto outputs = reinterpret_cast<t_signal**>(w[3]);
+
 	Grainflow::gf_io_config<t_sample> config;
 	config.block_size = inputs[0]->s_length;
 	config.samplerate = inputs[0]->s_sr;
 	config.livemode = true; //We do not know the buffer samplerate
 	grainflow_setup_inputs(x, config, inputs);
 	grainflow_setup_outputs(x, config, outputs);
-
+	if (!x->state) return w + 4;
 	x->grain_collection->process(config);
 
 
 	return w + 4;
+}
+
+void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
+{
+	x->state = f >= 1;
 }
 
 void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
@@ -193,6 +202,8 @@ void grainflow_tilde_setup(void)
 	class_addmethod(grainflow_tile_class,
 	                reinterpret_cast<t_method>(grainflow_tile_dsp), gensym("dsp"), A_CANT, 0);
 	CLASS_MAINSIGNALIN(grainflow_tile_class, t_grainflow_tilde, main_inlet);
+	class_addfloat(grainflow_tile_class,
+	               (t_method)grainflow_tilde_float);
 	class_addmethod(grainflow_tile_class,
 	                (t_method)grainflow_tilde_anything, gensym("anything"),
 	                A_GIMME, 0);
