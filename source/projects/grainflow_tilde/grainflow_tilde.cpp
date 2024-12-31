@@ -147,20 +147,37 @@ void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
 	x->state = f >= 1;
 }
 
+void grainflow_buffer_message(t_grainflow_tilde* x, t_symbol* s)
+{
+	auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(gensym(s->s_name),
+	                                                                   garray_class));
+
+	for (int i = 0; i < x->grain_collection->grains(); ++i)
+	{
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
+	}
+}
+
 void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
 {
 	if (ac < 1) return;
-	auto success = Grainflow::GF_RETURN_CODE::GF_ERR;
-	if (ac < 2)
+	int start = 0;
+	if (strcmp(s->s_name, "list") == 0)
 	{
-		success = x->grain_collection->param_set(0, std::string(s->s_name), av[0].a_w.w_float);
+		start = 1;
+		s = av[0].a_w.w_symbol;
+	}
+	auto success = Grainflow::GF_RETURN_CODE::GF_ERR;
+	if (ac < 2 + start)
+	{
+		success = x->grain_collection->param_set(0, std::string(s->s_name), av[0 + start].a_w.w_float);
 	}
 	else
 	{
-		for (int i = 0; i < ac; ++i)
+		for (int i = 0; i < x->grain_collection->grains(); ++i)
 		{
-			success = x->grain_collection->param_set((i % (x->grain_collection->grains()) + 1), std::string(s->s_name),
-			                                         av[i].a_w.w_float);
+			success = x->grain_collection->param_set(i, std::string(s->s_name),
+			                                         av[(i % (ac - start)) + start].a_w.w_float);
 		}
 	}
 	if (success != Grainflow::GF_RETURN_CODE::GF_SUCCESS)
@@ -203,8 +220,10 @@ void grainflow_tilde_setup(void)
 	                reinterpret_cast<t_method>(grainflow_tile_dsp), gensym("dsp"), A_CANT, 0);
 	CLASS_MAINSIGNALIN(grainflow_tile_class, t_grainflow_tilde, main_inlet);
 	class_addfloat(grainflow_tile_class,
-	               (t_method)grainflow_tilde_float);
+	               reinterpret_cast<t_method>(grainflow_tilde_float));
+	class_addmethod(grainflow_tile_class, reinterpret_cast<t_method>(grainflow_buffer_message), gensym("buf"),
+	                A_SYMBOL);
 	class_addmethod(grainflow_tile_class,
-	                (t_method)grainflow_tilde_anything, gensym("anything"),
+	                reinterpret_cast<t_method>(grainflow_tilde_anything), gensym("anything"),
 	                A_GIMME, 0);
 }
