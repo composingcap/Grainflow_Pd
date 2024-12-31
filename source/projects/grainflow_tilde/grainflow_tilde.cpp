@@ -147,17 +147,6 @@ void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
 	x->state = f >= 1;
 }
 
-void grainflow_buffer_message(t_grainflow_tilde* x, t_symbol* s)
-{
-	auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(gensym(s->s_name),
-	                                                                   garray_class));
-
-	for (int i = 0; i < x->grain_collection->grains(); ++i)
-	{
-		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
-	}
-}
-
 void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
 {
 	if (ac < 1) return;
@@ -182,6 +171,27 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 	}
 	if (success != Grainflow::GF_RETURN_CODE::GF_SUCCESS)
 	{
+		Grainflow::gf_buffers type;
+		if (buffer_reflection(s->s_name, type))
+		{
+			if (ac < 2)
+			{
+				auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(gensym(av[0].a_w.w_symbol->s_name),
+					garray_class));
+				x->grain_collection->set_buffer(type, buffer_ref, 0);
+			}
+			else
+			{
+				for (int i = 0; i < x->grain_collection->grains(); ++i)
+				{
+					auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(
+						gensym(av[i % (ac - start) + start].a_w.w_symbol->s_name),
+						garray_class));
+					x->grain_collection->set_buffer(type, buffer_ref, i + 1);
+				}
+			}
+			return;
+		}
 		auto message = std::format("grainflow: {} is not a valid parameter name", s->s_name);
 		pd_error(x, message.data());
 	}
@@ -221,8 +231,6 @@ void grainflow_tilde_setup(void)
 	CLASS_MAINSIGNALIN(grainflow_tile_class, t_grainflow_tilde, main_inlet);
 	class_addfloat(grainflow_tile_class,
 	               reinterpret_cast<t_method>(grainflow_tilde_float));
-	class_addmethod(grainflow_tile_class, reinterpret_cast<t_method>(grainflow_buffer_message), gensym("buf"),
-	                A_SYMBOL);
 	class_addmethod(grainflow_tile_class,
 	                reinterpret_cast<t_method>(grainflow_tilde_anything), gensym("anything"),
 	                A_GIMME, 0);

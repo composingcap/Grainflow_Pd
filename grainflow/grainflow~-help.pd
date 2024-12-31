@@ -76,6 +76,8 @@
 #X obj 531 316 s _gf_params;
 #X msg 485 268 buf _gf_buf;
 #X text 482 246 buf changes the refrence buffer;
+#X msg 782 245 env _gf_buf2;
+#X msg 768 304 env default;
 #X connect 2 0 26 2;
 #X connect 3 0 26 0;
 #X connect 5 0 0 0;
@@ -103,3 +105,5 @@
 #X connect 29 0 0 0;
 #X connect 30 0 31 0;
 #X connect 32 0 31 0;
+#X connect 34 0 31 0;
+#X connect 35 0 26 0;

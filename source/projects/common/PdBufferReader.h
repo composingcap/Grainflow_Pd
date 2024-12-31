@@ -22,6 +22,7 @@ namespace Grainflow
 			{
 				return false;
 			}
+			if (buffer_info == nullptr) return true;
 			buffer_info->buffer_frames = size;
 			buffer_info->sample_rate_adjustment = 1;
 			buffer_info->samplerate = io_config.samplerate;
@@ -61,10 +62,37 @@ namespace Grainflow
 		                            const float env2d_pos, t_sample* __restrict samples,
 		                            const t_sample* __restrict grain_clock, const int size)
 		{
+			if (use_default) {
+				for (int i = 0; i < size; ++i)
+				{
+					samples[i] = gf_envelopes::hanning_envelope[static_cast<int>(grain_clock[i] * 1024)];
+				}
+				return;
+			}
+			if (n_envelopes < 2)
+			{
+				int bsize{ 0 };
+				t_word* vec;
+				garray_getfloatwords(buffer, &bsize, &vec);
+				if (bsize == 0) return;
+				for (int i = 0; i < size; ++i)
+				{
+					samples[i] = vec[(int)(grain_clock[i]* bsize)].w_float;
+				}
+				return;
+			}
+			int bsize{ 0 };
+			t_word* vec;
+			garray_getfloatwords(buffer, &bsize, &vec);
+			if (bsize == 0) return;
+			bsize /= n_envelopes;
+			float mix = env2d_pos - std::floor(env2d_pos);
+			int a = std::floor(env2d_pos);
+			int b = (a + 1) % n_envelopes;
 			for (int i = 0; i < size; ++i)
 			{
-				samples[i] = gf_envelopes::hanning_envelope[static_cast<int>(grain_clock[i] * 1024)];
-			}
+				samples[i] = vec[(int)(grain_clock[i]* bsize + a * bsize)].w_float * (1-mix) + vec[(int)(grain_clock[i] * bsize + b * bsize)].w_float * (mix);
+			}			
 		};
 
 		static gf_i_buffer_reader<t_garray, t_sample> get_buffer_reader()
