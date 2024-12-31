@@ -128,7 +128,7 @@ t_int* grainflow_tilde_perform(t_int* w)
 	auto x = reinterpret_cast<t_grainflow_tilde*>(w[1]);
 	auto inputs = reinterpret_cast<t_signal**>(w[2]);
 	auto outputs = reinterpret_cast<t_signal**>(w[3]);
-
+	if (inputs[0] == nullptr || outputs[0] == nullptr) return w + 4;
 	Grainflow::gf_io_config<t_sample> config;
 	config.block_size = inputs[0]->s_length;
 	config.samplerate = inputs[0]->s_sr;
