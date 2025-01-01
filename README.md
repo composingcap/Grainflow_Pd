@@ -1,13 +1,13 @@
 ## How to build
 ### Clone this repo 
 ```
-git clone https://github.com/composingcap/grainflow.git --recursive 
+git clone https://github.com/composingcap/Grainflow_Pd.git --recursive 
 ```
 ### Build
+inside of this root of this repo run
 ```
-cd ./grainflow
 mkdir ./build
 cd build
-cmake ../
-cmake --build 
+cmake ..
+cmake --build .
 ```
