@@ -1,9 +1,8 @@
 PROJECT("grainflow_tilde")
-set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
 
 
 include_directories(
-    "${CMAKE_CURRENT_SOURCE_DIR}/../common/",
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common/"
     "${CMAKE_CURRENT_SOURCE_DIR}/../../GrainflowLib/include")
 
 set(

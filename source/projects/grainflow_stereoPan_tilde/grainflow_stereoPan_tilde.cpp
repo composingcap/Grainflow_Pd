@@ -16,6 +16,7 @@ static t_class* grainflow_stereoPan_tilde_class;
 typedef struct _grainflow_stereoPan_tilde
 {
 	t_object x_obj;
+	t_float f;
 	t_inlet* main_inlet;
 	t_inlet* second_inlet;
 	t_outlet* main_outlet;
@@ -117,5 +118,5 @@ void setup_grainflow0x2estereoPan_tilde(void)
 	                                            CLASS_MULTICHANNEL, A_GIMME, 0);
 	class_addmethod(grainflow_stereoPan_tilde_class,
 	                reinterpret_cast<t_method>(grainflow_stereoPan_tilde_dsp), gensym("dsp"), A_CANT, 0);
-	CLASS_MAINSIGNALIN(grainflow_stereoPan_tilde_class, t_grainflow_stereoPan_tilde, main_inlet);
+	CLASS_MAINSIGNALIN(grainflow_stereoPan_tilde_class, t_grainflow_stereoPan_tilde, f);
 }

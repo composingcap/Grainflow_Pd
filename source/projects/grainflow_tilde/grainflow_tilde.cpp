@@ -18,6 +18,7 @@ typedef struct _grainflow_tilde
 {
 	t_object x_obj;
 	t_inlet* main_inlet;
+	t_float f;
 	std::array<t_inlet*, 3> inlets{};
 	std::array<t_outlet*, 8> outlets{};
 	t_int n_grains = 1;
@@ -202,7 +203,7 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 			return;
 		}
 		auto message = std::format("grainflow: {} is not a valid parameter name", s->s_name);
-		pd_error(x, message.data());
+		pd_error(x, "%s", message.data());
 	}
 }
 
@@ -237,7 +238,7 @@ void grainflow_tilde_setup(void)
 	                                  CLASS_MULTICHANNEL, A_GIMME, 0);
 	class_addmethod(grainflow_tidle_class,
 	                reinterpret_cast<t_method>(grainflow_tilde_dsp), gensym("dsp"), A_CANT, 0);
-	CLASS_MAINSIGNALIN(grainflow_tidle_class, t_grainflow_tilde, main_inlet);
+	CLASS_MAINSIGNALIN(grainflow_tidle_class, t_grainflow_tilde, f);
 	class_addfloat(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float));
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float), gensym("state"),
 	                A_DEFFLOAT, 0);
