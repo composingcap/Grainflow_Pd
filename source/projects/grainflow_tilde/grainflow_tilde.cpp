@@ -5,14 +5,21 @@
 #include "PdBufferReader.h"
 #include <gfGrainCollection.h>
 #include <format>
-
+#include <cstring>
 
 static t_class* grainflow_tidle_class;
 
 namespace
 {
 	constexpr int internal_block = 16;
-}
+
+	struct iolet
+	{
+		t_sample* vec;
+		t_int nchans;
+	};
+};
+
 
 typedef struct _grainflow_tilde
 {
@@ -22,13 +29,15 @@ typedef struct _grainflow_tilde
 	std::array<t_inlet*, 3> inlets{};
 	std::array<t_outlet*, 8> outlets{};
 	t_int n_grains = 1;
-	std::unique_ptr<Grainflow::gf_grain_collection<t_garray, internal_block, t_sample>> grain_collection;
-	Grainflow::gf_i_buffer_reader<t_garray, t_sample> buffer_reader;
+	std::unique_ptr<Grainflow::gf_grain_collection<Grainflow::pd_buffer, internal_block, t_sample>> grain_collection;
+	Grainflow::gf_i_buffer_reader<Grainflow::pd_buffer, t_sample> buffer_reader;
 	std::array<std::vector<t_sample>, 4> input_channels;
 	std::array<std::vector<t_sample*>, 4> input_channel_ptrs;
 	std::array<std::vector<t_sample*>, 8> output_channel_ptrs;
-	std::string default_buffer_name;
-	bool has_loaded_buffer = false;
+	int blockSize = 0;
+	int samplerate = 0;
+	std::array<iolet, 4> inlet_data;
+	std::array<iolet, 8> outlet_data;
 
 	bool state = false;
 } t_grainflow_tilde;
@@ -48,19 +57,29 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 		outlet = outlet_new(&x->x_obj, &s_signal);
 	}
 	if (ac <= 0)return (void*)x;
-	x->default_buffer_name = std::string(av[0].a_w.w_symbol->s_name);
 
 	if (ac <= 1) return (void*)x;
 	x->n_grains = static_cast<int>(av[1].a_w.w_float);
 
 	x->buffer_reader = Grainflow::pd_buffer_reader::get_buffer_reader();
-	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<t_garray, internal_block, t_sample>>(
+	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<
+		Grainflow::pd_buffer, internal_block, t_sample>>(
 		x->buffer_reader, x->n_grains);
-	auto buffer_ref = reinterpret_cast<_garray*>(pd_findbyclass(gensym(x->default_buffer_name.c_str()), garray_class));
-	x->has_loaded_buffer = buffer_ref != nullptr;
+
 	for (int i = 0; i < x->grain_collection->grains(); ++i)
 	{
-		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer,
+		                                              new Grainflow::pd_buffer(av[0].a_w.w_symbol));
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::envelope,
+		                                              new Grainflow::pd_buffer());
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::rate_buffer,
+		                                              new Grainflow::pd_buffer());
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::delay_buffer,
+		                                              new Grainflow::pd_buffer());
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::window_buffer,
+		                                              new Grainflow::pd_buffer());
+		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::glisson_buffer,
+		                                              new Grainflow::pd_buffer());
 	}
 
 	return (void*)x;
@@ -74,22 +93,23 @@ void grainflow_init(t_grainflow_tilde* x, t_signal** inputs)
 	}
 }
 
-void grainflow_setup_inputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sample>& config, t_signal** inputs)
+void grainflow_setup_inputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sample>& config)
 {
-	config.grain_clock_chans = inputs[0]->s_nchans;
-	config.traversal_phasor_chans = inputs[1]->s_nchans;
-	config.fm_chans = inputs[2]->s_nchans;
-	config.am_chans = inputs[3]->s_nchans;
+	config.grain_clock_chans = x->inlet_data[0].nchans;
+	config.traversal_phasor_chans = x->inlet_data[1].nchans;
+	config.fm_chans = x->inlet_data[2].nchans;
+	config.am_chans = x->inlet_data[3].nchans;
 
-	for (int i = 0; i < x->input_channels.size(); ++i)
+	for (int i = 0; i < x->inlet_data.size(); ++i)
 	{
-		std::copy_n(inputs[i]->s_vec, x->input_channels[i].size(), x->input_channels[i].begin());
+		const auto vec = x->inlet_data[i].vec;
+		std::copy_n(vec, x->input_channels[i].size(), x->input_channels[i].data());
 	}
 
 	for (int i = 0; i < x->input_channel_ptrs.size(); ++i)
 	{
-		x->input_channel_ptrs[i].resize(inputs[i]->s_nchans);
-		const int chan_size = inputs[i]->s_length;
+		x->input_channel_ptrs[i].resize(x->inlet_data[i].nchans);
+		const int chan_size = x->blockSize;
 		for (int j = 0; j < x->input_channel_ptrs[i].size(); ++j)
 		{
 			x->input_channel_ptrs[i][j] = &(x->input_channels[i].data()[j * chan_size]);
@@ -102,15 +122,15 @@ void grainflow_setup_inputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_samp
 	config.am = x->input_channel_ptrs[3].data();
 }
 
-void grainflow_setup_outputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sample>& config, t_signal** outputs)
+void grainflow_setup_outputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sample>& config)
 {
 	for (int i = 0; i < x->output_channel_ptrs.size(); ++i)
 	{
 		x->output_channel_ptrs[i].resize(x->n_grains);
-		const int chan_size = outputs[i]->s_length;
+		const int chan_size = x->blockSize;
 		for (int j = 0; j < x->n_grains; ++j)
 		{
-			x->output_channel_ptrs[i][j] = &(outputs[i]->s_vec[j * chan_size]);
+			x->output_channel_ptrs[i][j] = &(x->outlet_data[i].vec[j * chan_size]);
 			std::fill_n(x->output_channel_ptrs[i][j], chan_size, 0.0f);
 		}
 	}
@@ -128,32 +148,20 @@ void grainflow_setup_outputs(t_grainflow_tilde* x, Grainflow::gf_io_config<t_sam
 t_int* grainflow_tilde_perform(t_int* w)
 {
 	auto x = reinterpret_cast<t_grainflow_tilde*>(w[1]);
-	auto inputs = reinterpret_cast<t_signal**>(w[2]);
-	auto outputs = reinterpret_cast<t_signal**>(w[3]);
 	Grainflow::gf_io_config<t_sample> config;
-	config.block_size = inputs[0]->s_length;
-	config.samplerate = inputs[0]->s_sr;
+	config.block_size = x->blockSize;
+	config.samplerate = x->samplerate;
 	config.livemode = true; //We do not know the buffer samplerate
-	grainflow_setup_inputs(x, config, inputs);
-	grainflow_setup_outputs(x, config, outputs);
-	if (!x->state) return w + 4;
+	grainflow_setup_inputs(x, config);
+	grainflow_setup_outputs(x, config);
+	if (!x->state) return w + 2;
 	x->grain_collection->process(config);
-	return w + 4;
+	return w + 2;
 }
 
 void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
 {
 	x->state = f >= 1;
-	if (x->state && !x->has_loaded_buffer)
-	{
-		auto buffer_ref = reinterpret_cast<_garray*>(pd_findbyclass(gensym(x->default_buffer_name.c_str()),
-		                                                            garray_class));
-		x->has_loaded_buffer = buffer_ref != nullptr;
-		for (int i = 0; i < x->grain_collection->grains(); ++i)
-		{
-			x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
-		}
-	}
 }
 
 void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
@@ -185,37 +193,22 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 		{
 			if (ac < 2)
 			{
-				auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(gensym(av[0].a_w.w_symbol->s_name),
-					garray_class));
-				x->grain_collection->set_buffer(type, buffer_ref, 0);
+				for (int i = 0; i < x->grain_collection->grains(); ++i)
+				{
+					x->grain_collection->get_buffer(type, i)->set(av[0].a_w.w_symbol);
+				}
 			}
 			else
 			{
 				for (int i = 0; i < x->grain_collection->grains(); ++i)
 				{
-					auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(
-						gensym(av[i % (ac - start) + start].a_w.w_symbol->s_name),
-						garray_class));
-					x->grain_collection->set_buffer(type, buffer_ref, i + 1);
+					x->grain_collection->get_buffer(type, i)->set(av[i % (ac - start) + start].a_w.w_symbol);
 				}
-				x->has_loaded_buffer = true;
 			}
 			return;
 		}
 		auto message = std::format("grainflow: {} is not a valid parameter name", s->s_name);
 		pd_error(x, "%s", message.data());
-	}
-}
-
-void grainflow_tilde_free(t_grainflow_tilde* x)
-{
-	for (auto& inlet : x->inlets)
-	{
-		inlet_free(inlet);
-	}
-	for (auto& outlet : x->outlets)
-	{
-		outlet_free(outlet);
 	}
 }
 
@@ -226,8 +219,17 @@ static void grainflow_tilde_dsp(t_grainflow_tilde* x, t_signal** sp)
 	for (int i = 0; i < x->outlets.size(); ++i)
 	{
 		signal_setmultiout(&sp[x->inlets.size() + 1 + i], x->n_grains); //Main inlet + additional ones
+		x->outlet_data[i].nchans = x->n_grains;
+		x->outlet_data[i].vec = sp[x->inlets.size() + 1 + i]->s_vec;
 	}
-	dsp_add(grainflow_tilde_perform, 3, x, &sp[0], &sp[x->inlets.size() + 1]);
+	for (int i = 0; i < x->inlet_data.size(); ++i)
+	{
+		x->inlet_data[i].vec = sp[i]->s_vec;
+		x->inlet_data[i].nchans = sp[i]->s_nchans;
+	}
+	x->blockSize = sp[0]->s_length;
+	x->samplerate = sp[0]->s_sr;
+	dsp_add(grainflow_tilde_perform, 1, x);
 }
 
 void grainflow_tilde_setup(void)
