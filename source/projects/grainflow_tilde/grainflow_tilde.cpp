@@ -7,7 +7,7 @@
 #include <format>
 
 
-static t_class* grainflow_tile_class;
+static t_class* grainflow_tidle_class;
 
 namespace
 {
@@ -27,6 +27,7 @@ typedef struct _grainflow_tilde
 	std::array<std::vector<t_sample*>, 4> input_channel_ptrs;
 	std::array<std::vector<t_sample*>, 8> output_channel_ptrs;
 	std::string default_buffer_name;
+	bool has_loaded_buffer = false;
 
 	bool state = false;
 } t_grainflow_tilde;
@@ -35,7 +36,7 @@ typedef struct _grainflow_tilde
 void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 {
 	s = nullptr;
-	t_grainflow_tilde* x = reinterpret_cast<t_grainflow_tilde*>(pd_new(grainflow_tile_class));
+	t_grainflow_tilde* x = reinterpret_cast<t_grainflow_tilde*>(pd_new(grainflow_tidle_class));
 
 	for (auto& inlet : x->inlets)
 	{
@@ -54,8 +55,8 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 	x->buffer_reader = Grainflow::pd_buffer_reader::get_buffer_reader();
 	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<t_garray, internal_block, t_sample>>(
 		x->buffer_reader, x->n_grains);
-	auto buffer_ref = reinterpret_cast<struct _garray*>(pd_findbyclass(gensym(x->default_buffer_name.c_str()),
-	                                                                   garray_class));
+	auto buffer_ref = reinterpret_cast<_garray*>(pd_findbyclass(gensym(x->default_buffer_name.c_str()), garray_class));
+	x->has_loaded_buffer = buffer_ref != nullptr;
 	for (int i = 0; i < x->grain_collection->grains(); ++i)
 	{
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
@@ -128,7 +129,6 @@ t_int* grainflow_tilde_perform(t_int* w)
 	auto x = reinterpret_cast<t_grainflow_tilde*>(w[1]);
 	auto inputs = reinterpret_cast<t_signal**>(w[2]);
 	auto outputs = reinterpret_cast<t_signal**>(w[3]);
-	if (inputs[0] == nullptr || outputs[0] == nullptr) return w + 4;
 	Grainflow::gf_io_config<t_sample> config;
 	config.block_size = inputs[0]->s_length;
 	config.samplerate = inputs[0]->s_sr;
@@ -137,14 +137,22 @@ t_int* grainflow_tilde_perform(t_int* w)
 	grainflow_setup_outputs(x, config, outputs);
 	if (!x->state) return w + 4;
 	x->grain_collection->process(config);
-
-
 	return w + 4;
 }
 
 void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
 {
 	x->state = f >= 1;
+	if (x->state && !x->has_loaded_buffer)
+	{
+		auto buffer_ref = reinterpret_cast<_garray*>(pd_findbyclass(gensym(x->default_buffer_name.c_str()),
+		                                                            garray_class));
+		x->has_loaded_buffer = buffer_ref != nullptr;
+		for (int i = 0; i < x->grain_collection->grains(); ++i)
+		{
+			x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer, buffer_ref);
+		}
+	}
 }
 
 void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
@@ -189,6 +197,7 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 						garray_class));
 					x->grain_collection->set_buffer(type, buffer_ref, i + 1);
 				}
+				x->has_loaded_buffer = true;
 			}
 			return;
 		}
@@ -209,7 +218,7 @@ void grainflow_tilde_free(t_grainflow_tilde* x)
 	}
 }
 
-static void grainflow_tile_dsp(t_grainflow_tilde* x, t_signal** sp)
+static void grainflow_tilde_dsp(t_grainflow_tilde* x, t_signal** sp)
 {
 	x->n_grains = std::max<t_int>(x->n_grains, 1);
 	grainflow_init(x, sp);
@@ -222,16 +231,16 @@ static void grainflow_tile_dsp(t_grainflow_tilde* x, t_signal** sp)
 
 void grainflow_tilde_setup(void)
 {
-	grainflow_tile_class = class_new(gensym("grainflow~"),
-	                                 reinterpret_cast<t_newmethod>(grainflow_tilde_new),
-	                                 0, sizeof(t_grainflow_tilde),
-	                                 CLASS_MULTICHANNEL, A_GIMME, 0);
-	class_addmethod(grainflow_tile_class,
-	                reinterpret_cast<t_method>(grainflow_tile_dsp), gensym("dsp"), A_CANT, 0);
-	CLASS_MAINSIGNALIN(grainflow_tile_class, t_grainflow_tilde, main_inlet);
-	class_addfloat(grainflow_tile_class,
-	               reinterpret_cast<t_method>(grainflow_tilde_float));
-	class_addmethod(grainflow_tile_class,
-	                reinterpret_cast<t_method>(grainflow_tilde_anything), gensym("anything"),
+	grainflow_tidle_class = class_new(gensym("grainflow~"),
+	                                  reinterpret_cast<t_newmethod>(grainflow_tilde_new),
+	                                  0, sizeof(t_grainflow_tilde),
+	                                  CLASS_MULTICHANNEL, A_GIMME, 0);
+	class_addmethod(grainflow_tidle_class,
+	                reinterpret_cast<t_method>(grainflow_tilde_dsp), gensym("dsp"), A_CANT, 0);
+	CLASS_MAINSIGNALIN(grainflow_tidle_class, t_grainflow_tilde, main_inlet);
+	class_addfloat(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float));
+	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float), gensym("state"),
+	                A_DEFFLOAT, 0);
+	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_anything), gensym("anything"),
 	                A_GIMME, 0);
 }

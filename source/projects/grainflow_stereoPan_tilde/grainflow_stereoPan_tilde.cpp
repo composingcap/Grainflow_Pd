@@ -58,8 +58,7 @@ t_int* grainflow_stereoPan_tilde_perform(t_int* w)
 	auto x = reinterpret_cast<t_grainflow_stereoPan_tilde*>(w[1]);
 	auto inputs = reinterpret_cast<t_signal**>(w[2]);
 	auto outputs = reinterpret_cast<t_signal**>(w[3]);
-	if (inputs == nullptr || outputs == nullptr) return w + 4;
-
+	if (inputs[0]->s_sr < 1) return w + 4;
 	for (int i = 0; i < x->input_channel_ptrs.size(); ++i)
 	{
 		for (int j = 0; j < x->input_channel_ptrs[i].size(); ++j)

@@ -55,6 +55,51 @@ namespace Grainflow
 		                         t_sample* __restrict scratch,
 		                         const int start_position, const float overdub, const int size)
 		{
+			if (buffer == nullptr) return;
+			int frames{ 0 };
+			t_word* vec;
+			if (!garray_getfloatwords(buffer, &frames, &vec))	return;
+			auto is_segmented = (start_position + size) >= frames;
+			auto use_overdub = overdub >= 0.0001f;
+			int channels = 1;
+
+			if (use_overdub)
+			{
+				if (!is_segmented)
+				{
+					for (int i = 0; i < size; i++)
+					{
+						scratch[i] = vec[(start_position + i) * channels + channel].w_float * overdub;
+					}
+				}
+				else
+				{
+					for (int i = 0; i < size; i++)
+					{
+						scratch[i] = vec[(((start_position + i) % frames) * channels + channel)].w_float * overdub;
+					}
+				}
+			}
+			else
+			{
+				memset(vec, 0.0, sizeof(double) * size);
+			}
+
+			if (!is_segmented)
+			{
+				for (int i = 0; i < size; i++)
+				{
+					vec[(start_position + i) * channels + channel].w_float = samples[i] * (1 - overdub) + scratch[i];
+				}
+				return;
+			}
+			auto first_chunk = (start_position + size) - frames;
+			for (int i = 0; i < size; i++)
+			{
+				vec[(((start_position + i) % frames) * channels + channel)].w_float = samples[i] * (1 - overdub) +
+					scratch[i];
+			}
+
 		};
 
 
