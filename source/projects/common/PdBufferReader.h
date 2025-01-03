@@ -30,34 +30,6 @@ namespace Grainflow
 				}
 			*size = i_size;
 			return true;
-			//TODO: Get this to work so we do not have to look for the buffer every frame
-
-			//if (name == nullptr || strcmp(name->s_name, "") == 0) return false;
-			//if (gpointer_check(&ptr, 0))
-			//{
-			//	*vec = (t_word*)(ptr.gp_stub->gs_un.gs_array->a_vec);
-			//	*size = ptr.gp_stub->gs_un.gs_array->a_n;
-			//	return true;
-			//}
-			//t_garray* buffer_ref;
-			//if (!(buffer_ref = (t_garray*)pd_findbyclass(name, garray_class)))
-			//{
-			//	return false;
-			//}
-			//t_gstub* gs;
-			//int i_size;
-			//if (!garray_getfloatwords(buffer_ref,&i_size, vec))
-			//{
-			//	return false;
-			//}
-			//gpointer_unset(&ptr);
-			//*size = i_size;
-			//t_array* array = (t_array*)buffer_ref;
-			//ptr.gp_stub = gs = array->a_stub;
-			//ptr.gp_valid = array->a_valid;
-			//ptr.gp_un.gp_w = *vec;
-			//return true;
-
 		}
 		void set(t_symbol* name)
 		{
@@ -96,7 +68,28 @@ namespace Grainflow
 
 		static bool sample_param_buffer(pd_buffer* buffer, gf_param* param, const int grain_id)
 		{
-			return false;
+			std::random_device rd;
+			if (param->mode == gf_buffer_mode::normal || buffer == nullptr)
+			{
+				return false;
+			}
+			
+			t_int frame = 0;
+			t_int frames = 0;
+			t_word* vec;
+			if(!buffer->get(&frames, &vec))return false;
+			if (frames <= 0) return false;
+			if (param->mode == gf_buffer_mode::buffer_sequence)
+			{
+				frame = grain_id % frames;
+			}
+			else if (param->mode == gf_buffer_mode::buffer_random)
+			{
+				frame = (rd() % frames);
+			}
+			param->value = vec[frame].w_float + param->random * (rd() % 10000) * 0.0001 + param->offset *
+				grain_id;
+			return true;
 		}
 
 		static void sample_buffer(pd_buffer* buffer, const int channel, t_sample* __restrict samples,

@@ -55,10 +55,16 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 	{
 		outlet = outlet_new(&x->x_obj, &s_signal);
 	}
-	if (ac <= 0)return (void*)x;
-
-	if (ac <= 1) return (void*)x;
+	if (ac < 2){
+		pd_error("grainflow~: must be instantiated with two arguments- buffer-name ngrains", "");
+		return (void*)x;
+	}
 	x->n_grains = static_cast<int>(av[1].a_w.w_float);
+	t_symbol* envName = gensym("default");
+	if (ac > 2){
+		envName= av[2].a_w.w_symbol;
+	}
+
 
 	x->buffer_reader = Grainflow::pd_buffer_reader::get_buffer_reader();
 	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<
@@ -70,7 +76,7 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::buffer,
 		                                              new Grainflow::pd_buffer(av[0].a_w.w_symbol));
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::envelope,
-		                                              new Grainflow::pd_buffer());
+		                                              new Grainflow::pd_buffer(envName));
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::rate_buffer,
 		                                              new Grainflow::pd_buffer());
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::delay_buffer,
