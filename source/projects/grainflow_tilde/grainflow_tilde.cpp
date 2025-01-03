@@ -199,9 +199,26 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 			}
 			else
 			{
+				auto arg_counter = 0;
 				for (int i = 0; i < x->grain_collection->grains(); ++i)
 				{
-					x->grain_collection->get_buffer(type, i)->set(av[i % (ac - start) + start].a_w.w_symbol);
+					auto tries = 0;
+					while (av[arg_counter % (ac - start) + start].a_type!= t_atomtype::A_SYMBOL){
+						if (tries > 3) return;
+						arg_counter++;
+						tries++;
+					};
+					x->grain_collection->get_buffer(type, i)->set(av[arg_counter % (ac - start) + start].a_w.w_symbol);
+					arg_counter++;
+					if (type == Grainflow::gf_buffers::envelope){
+						if (av[arg_counter % (ac - start) + start].a_type== t_atomtype::A_FLOAT){
+							x->grain_collection->param_set(i+1,Grainflow::gf_param_name::n_envelopes, Grainflow::gf_param_type::value, static_cast<float>(av[arg_counter % (ac - start) + start].a_w.w_float));
+							arg_counter++;
+						}
+						else{
+							x->grain_collection->param_set(i+1,Grainflow::gf_param_name::n_envelopes, Grainflow::gf_param_type::value, 1);
+						}
+					}
 				}
 			}
 			return;
