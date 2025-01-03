@@ -130,7 +130,7 @@ static void grainflow_stereoPan_tilde_dsp(t_grainflow_stereoPan_tilde* x, t_sign
 }
 
 
-void setup_grainflow0x2estereoPan_tilde(void)
+extern "C" void setup_grainflow0x2estereoPan_tilde(void)
 {
 	grainflow_stereoPan_tilde_class = class_new(gensym("grainflow.stereoPan~"),
 	                                            reinterpret_cast<t_newmethod>(grainflow_stereoPan_tilde_new),

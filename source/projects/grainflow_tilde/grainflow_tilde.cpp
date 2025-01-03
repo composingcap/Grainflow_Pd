@@ -230,7 +230,7 @@ static void grainflow_tilde_dsp(t_grainflow_tilde* x, t_signal** sp)
 	dsp_add(grainflow_tilde_perform, 1, x);
 }
 
-void grainflow_tilde_setup(void)
+extern "C" void grainflow_tilde_setup(void)
 {
 	grainflow_tidle_class = class_new(gensym("grainflow~"),
 	                                  reinterpret_cast<t_newmethod>(grainflow_tilde_new),
