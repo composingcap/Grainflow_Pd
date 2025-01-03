@@ -4,7 +4,6 @@
 #include <array>
 #include "PdBufferReader.h"
 #include <gfGrainCollection.h>
-#include <format>
 #include <cstring>
 
 static t_class* grainflow_tidle_class;
@@ -207,8 +206,7 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 			}
 			return;
 		}
-		auto message = std::format("grainflow: {} is not a valid parameter name", s->s_name);
-		pd_error(x, "%s", message.data());
+		pd_error(x, "grainflow: %s is not a valid parameter name", s->s_name);
 	}
 }
 

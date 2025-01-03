@@ -3,7 +3,8 @@
 #include <vector>
 #include <array>
 #include <gfPanner.h>
-#include <format>
+#include <atomic>
+#include <memory>
 
 
 namespace
