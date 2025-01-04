@@ -302,6 +302,48 @@ void grainflow_stream_param_spread(t_grainflow_tilde* x, t_symbol* s, int ac, t_
 	}
 }
 
+void grainflow_param_message(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av){
+	if (ac < 3) {return;}
+	if (av[0].a_type != A_FLOAT || av[1].a_type != A_SYMBOL){return;}
+		Grainflow::gf_param_name param;
+		Grainflow::gf_param_type type;
+		int grain_id = av[0].a_w.w_float;
+
+		if(Grainflow::param_reflection(av[1].a_w.w_symbol->s_name, param, type)){
+			if (av[2].a_type != A_FLOAT) {return;}
+			x->grain_collection->param_set(grain_id, param, type, av[2].a_w.w_float);
+			return;
+		}	
+		Grainflow::gf_buffers buffer_type;
+		if(Grainflow::buffer_reflection(av[1].a_w.w_symbol->s_name, buffer_type)){
+			if (av[2].a_type != A_SYMBOL) {return;}
+			x->grain_collection->get_buffer(buffer_type, grain_id)->set(av[2].a_w.w_symbol);
+			return;
+		}	
+
+}
+
+void grainflow_param_deviate(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av){
+	if (ac < 3) {return;}
+	if (av[0].a_type != A_SYMBOL || av[1].a_type != A_FLOAT || av[2].a_type != A_FLOAT){return;}
+		Grainflow::gf_param_name param;
+		Grainflow::gf_param_type type;
+		if(Grainflow::param_reflection(av[0].a_w.w_symbol->s_name, param, type)){
+			x->grain_collection->grain_param_func(param, type, &Grainflow::gf_utils::deviate ,av[1].a_w.w_float,av[2].a_w.w_float);
+			return;
+		}	
+	}
+
+	void grainflow_param_spread(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av){
+	if (ac < 3) {return;}
+	if (av[0].a_type != A_SYMBOL || av[1].a_type != A_FLOAT || av[2].a_type != A_FLOAT){return;}
+		Grainflow::gf_param_name param;
+		Grainflow::gf_param_type type;
+		if(Grainflow::param_reflection(av[0].a_w.w_symbol->s_name, param, type)){
+			x->grain_collection->grain_param_func(param, type, &Grainflow::gf_utils::lerp ,av[1].a_w.w_float,av[2].a_w.w_float);
+			return;
+		}	
+	}
 
 
 extern "C" void grainflow_tilde_setup(void)
@@ -315,14 +357,13 @@ extern "C" void grainflow_tilde_setup(void)
 	CLASS_MAINSIGNALIN(grainflow_tidle_class, t_grainflow_tilde, f);
 	class_addfloat(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float));
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_tilde_float), gensym("state"),
-	                A_DEFFLOAT, 0);
-	
-	// class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(), gensym("g"),
-	//                 A_GIMME, 0);
-	// class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(), gensym("deviate"),
-	//                 A_GIMME, 0);
-	// class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(), gensym("spread"),
-	//                 A_GIMME, 0);
+	                A_DEFFLOAT, 0);	
+	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_param_message), gensym("g"),
+	                 A_GIMME, 0);
+	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_param_deviate), gensym("deviate"),
+	                 A_GIMME, 0);
+	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_param_spread), gensym("spread"),
+	                A_GIMME, 0);
 	
 	//Streams
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_stream_set), gensym("streamSet"),
