@@ -10,7 +10,7 @@
 #X floatatom 103 134 7 0 0 1 Grain\ Clock - - 0;
 #X obj 187 192 phasor~ 0.2;
 #X obj 111 251 r _gf_params;
-#N canvas 560 276 653 678 parameters 1;
+#N canvas 560 276 653 678 parameters 0;
 #X obj 18 205 s _gf_params;
 #X msg 93 164 delayRandom \$1;
 #X floatatom 93 137 5 0 0 0 - - - 0;
@@ -61,9 +61,9 @@
 #X connect 21 0 12 0;
 #X restore 323 0 pd parameters;
 #X msg 29 133 state \$1;
-#X obj 102 352 *~ 0.25;
-#X obj 102 322 grainflow.stereoPan~ 0.5 1;
-#X obj 102 382 dac~ 1;
+#X obj 102 369 *~ 0.25;
+#X obj 102 339 grainflow.stereoPan~ 0.5 1;
+#X obj 102 399 dac~ 1;
 #X obj 102 84 loadbang;
 #X msg 102 108 8;
 #X obj 193 87 loadbang;
@@ -117,7 +117,7 @@
 #X connect 13 0 12 0;
 #X connect 14 0 11 0;
 #X restore 322 22 pd buffersAndEnvelopes;
-#N canvas 1299 409 450 300 synthesis 0;
+#N canvas 1299 409 450 300 synthesis 1;
 #X obj 94 123 tgl 19 0 empty empty State\  0 -10 0 12 #fcfcfc #000000 #000000 0 1;
 #X msg 91 154 state \$1;
 #X obj 36 366 clone -d mc_fm 8, f 47;
@@ -147,14 +147,14 @@
 #X connect 7 0 2 2;
 #X connect 8 0 13 0;
 #X connect 9 0 8 0;
-#X connect 11 1 2 3 48.................X....3C....F....9....jC...P1....4....jM...Po....;
-#X connect 11 1 8 1 32.................CC...bA...vv....W....nN....;
-#X connect 11 5 9 1 32.................GC...nx++++w....p7+++CM....;
+#X connect 11 2 2 3;
+#X connect 11 2 8 1;
+#X connect 11 6 9 1 48.................4B...Dz+++et....A8+++iK...PH++++3B...Dx+++ev....;
 #X connect 12 0 11 0;
 #X connect 13 0 10 0;
 #X connect 14 0 2 0;
 #X restore 322 71 pd synthesis;
-#N canvas 781 320 856 453 multichannelInputs 0;
+#N canvas 781 320 856 453 multichannelInputs 1;
 #X obj 61 295 grainflow.stereoPan~ 0.5 1;
 #X obj 74 136 phasor~ 8;
 #X obj 76 191 snake~ 2;
@@ -183,7 +183,7 @@
 #X connect 2 0 4 0;
 #X connect 3 0 4 1;
 #X connect 4 0 0 0;
-#X connect 4 1 0 1;
+#X connect 4 2 0 1;
 #X connect 5 0 2 1;
 #X connect 6 0 3 0;
 #X connect 7 0 3 1;
@@ -236,7 +236,7 @@
 #X restore 340 267 pd setModes;
 #X obj 11 236 tgl 25 0 empty empty empty 17 7 0 10 #e4e4e4 #4d4d4d #373737 0 1;
 #X connect 3 0 7 0;
-#X connect 3 1 7 1;
+#X connect 3 2 7 1;
 #X connect 4 0 3 0;
 #X connect 5 0 3 0;
 #X connect 6 0 8 0;
@@ -244,7 +244,7 @@
 #X connect 9 0 3 0;
 #X connect 10 0 5 0;
 #X restore 501 1 pd parameterArrays;
-#N canvas 143 82 713 518 streams 0;
+#N canvas 143 82 713 518 streams 1;
 #X obj 27 126 tgl 19 0 empty empty State\  0 -10 0 12 #fcfcfc #000000 #000000 0 1;
 #X obj 100 342 phasor~ 8;
 #X obj 180 342 phasor~ 0.2;
@@ -277,7 +277,7 @@
 #X connect 4 0 6 0;
 #X connect 5 0 4 0;
 #X connect 7 0 5 0;
-#X connect 7 1 5 1;
+#X connect 7 2 5 1;
 #X connect 8 0 7 0;
 #X connect 9 0 7 0;
 #X connect 10 0 7 0;
@@ -304,4 +304,4 @@
 #X connect 18 0 19 0;
 #X connect 19 0 7 0;
 #X connect 25 0 14 0;
-#X connect 25 1 14 1;
+#X connect 25 2 14 1;
