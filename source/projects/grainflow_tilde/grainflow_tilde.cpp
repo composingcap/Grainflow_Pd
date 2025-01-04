@@ -326,7 +326,7 @@ extern "C" void grainflow_tilde_setup(void)
 	
 	//Streams
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_stream_set), gensym("streamSet"),
-	                A_SYMBOL, A_FLOAT, 0);
+	                A_GIMME, 0);
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_stream_param_set), gensym("stream"),
 	                A_GIMME, 0);
 	class_addmethod(grainflow_tidle_class, reinterpret_cast<t_method>(grainflow_stream_param_deviate), gensym("streamDeviate"),
