@@ -16,6 +16,12 @@ ADD_PD_EXTERNAL(
  grainflow~
  ${SOURCE_FILES})
 
+set(ASSETS
+${CMAKE_CURRENT_SOURCE_DIR}/grainflow~-help.pd
+${CMAKE_CURRENT_SOURCE_DIR}/mc_fm.pd )
+
+ file(COPY ${ASSETS} DESTINATION ${PD_OUTPUT_PATH})
+
 # set(RELFLAGS )
 # if (MSVC)
 # set(RELFLAGS /Oi /O2 /Ot /Ob2)

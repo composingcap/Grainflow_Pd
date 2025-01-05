@@ -27,6 +27,9 @@ set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/grainflow/)
 set(PD_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src/pd.lib)
 include_directories(grainflowLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source/grainflowLib)
 
+file(COPY assets DESTINATION ${PD_OUTPUT_PATH})
+
+
 SUBDIRLIST(PROJECT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/source/projects)
 foreach (project_dir ${PROJECT_DIRS})
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/source/projects/${project_dir}/CMakeLists.txt")

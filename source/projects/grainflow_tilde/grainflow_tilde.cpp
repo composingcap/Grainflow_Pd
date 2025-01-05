@@ -143,7 +143,7 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<
 		Grainflow::pd_buffer, internal_block, t_sample>>(
 		x->buffer_reader, x->max_grains);
-		
+
 	x->grain_collection->set_active_grains(x->max_grains);
 
 	for (int i = 0; i < x->grain_collection->grains(); ++i)
@@ -241,7 +241,7 @@ t_int* grainflow_tilde_perform(t_int* w)
 	x->grain_collection->process(config);
 
 	if (x->data_update) { return w + 2; }
-	
+
 	for (int i = 0; i < x->grain_collection->active_grains(); ++i)
 	{
 		auto j = i + 1;
@@ -261,7 +261,7 @@ t_int* grainflow_tilde_perform(t_int* w)
 		x->grain_data.grain_amp[j].a_type = A_FLOAT;
 	}
 	x->data_update = true;
-	
+
 
 	return w + 2;
 }
@@ -303,7 +303,11 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 				for (int i = 0; i < x->grain_collection->grains(); ++i)
 				{
 					x->grain_collection->get_buffer(type, i)->set(av[0].a_w.w_symbol);
-					if (type == Grainflow::gf_buffers::buffer) {x->grain_collection->param_set(i, Grainflow::gf_param_name::channel, Grainflow::gf_param_type::value, 1);}
+					if (type == Grainflow::gf_buffers::buffer)
+					{
+						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
+						                               Grainflow::gf_param_type::value, 1);
+					}
 				}
 			}
 			else
@@ -311,8 +315,8 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 				auto arg_counter = 0;
 				auto buffer_counter = 0;
 				auto n_buffers = 0;
-				for(int i = 0; i < ac; ++i){if (av[i].a_type==A_SYMBOL) ++n_buffers;}
-				if (n_buffers < 1) {return;}
+				for (int i = 0; i < ac; ++i) { if (av[i].a_type == A_SYMBOL) ++n_buffers; }
+				if (n_buffers < 1) { return; }
 				for (int i = 0; i < x->grain_collection->grains(); ++i)
 				{
 					x->grain_collection->get_buffer(type, i)->channels = n_buffers;
@@ -327,7 +331,9 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 					arg_counter++;
 					if (type == Grainflow::gf_buffers::envelope || type == Grainflow::gf_buffers::glisson_buffer)
 					{
-						auto n_param = type == Grainflow::gf_buffers::envelope ? Grainflow::gf_param_name::n_envelopes : Grainflow::gf_param_name::glisson_rows;
+						auto n_param = type == Grainflow::gf_buffers::envelope
+							               ? Grainflow::gf_param_name::n_envelopes
+							               : Grainflow::gf_param_name::glisson_rows;
 						if (av[arg_counter % (ac - start) + start].a_type == t_atomtype::A_FLOAT)
 						{
 							x->grain_collection->param_set(i + 1, n_param,
@@ -341,7 +347,11 @@ void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom*
 							x->grain_collection->param_set(i + 1, n_param, Grainflow::gf_param_type::value, 1);
 						}
 					}
-					else if (type == Grainflow::gf_buffers::buffer) {x->grain_collection->param_set(i, Grainflow::gf_param_name::channel, Grainflow::gf_param_type::base, buffer_counter%n_buffers);}
+					else if (type == Grainflow::gf_buffers::buffer)
+					{
+						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
+						                               Grainflow::gf_param_type::base, buffer_counter % n_buffers);
+					}
 					buffer_counter++;
 				}
 			}
@@ -485,14 +495,20 @@ void grainflow_param_spread(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* a
 	}
 }
 
-void grainflow_ngrains(t_grainflow_tilde* x, t_floatarg f){
-
+void grainflow_ngrains(t_grainflow_tilde* x, t_floatarg f)
+{
 	x->grain_collection->set_active_grains(f);
 	x->grain_data.resize(x->max_grains);
 }
 
-void grainflow_auto_overlap(t_grainflow_tilde* x, t_floatarg f){
+void grainflow_auto_overlap(t_grainflow_tilde* x, t_floatarg f)
+{
 	x->grain_collection->set_auto_overlap(f >= 1);
+}
+
+void grainflow_free(t_grainflow_tilde* x)
+{
+	x->data_thread->stop();
 }
 
 
@@ -500,7 +516,7 @@ extern "C" void grainflow_tilde_setup(void)
 {
 	grainflow_tidle_class = class_new(gensym("grainflow~"),
 	                                  reinterpret_cast<t_newmethod>(grainflow_tilde_new),
-	                                  0, sizeof(t_grainflow_tilde),
+	                                  reinterpret_cast<t_method>(grainflow_free), sizeof(t_grainflow_tilde),
 	                                  CLASS_MULTICHANNEL, A_GIMME, 0);
 	class_addmethod(grainflow_tidle_class,
 	                reinterpret_cast<t_method>(grainflow_tilde_dsp), gensym("dsp"), A_CANT, 0);
