@@ -20,14 +20,17 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment ver
 set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "" FORCE)
 
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/pd.cmake)
+include(${CMAKE_SOURCE_DIR}/pd.cmake)
 
 set_pd_sources("${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src")
-set_pd_external_path(${CMAKE_CURRENT_SOURCE_DIR}/grainflow/)
-set(PD_LIBRARY ${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src/pd.lib)
-include_directories(grainflowLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/Source/grainflowLib)
+set_pd_external_path(${CMAKE_SOURCE_DIR}/grainflow/)
+set(PD_LIBRARY ${CMAKE_SOURCE_DIR}/source/pure-data/src/pd.lib)
+include_directories(grainflowLib PUBLIC ${CMAKE_SOURCE_DIR}/Source/grainflowLib)
 
 file(COPY assets DESTINATION ${PD_OUTPUT_PATH})
+
+file(GLOB PD_FILES "${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src/*.lib")
+message("PD LIB: ${PD_FILES}")
 
 
 SUBDIRLIST(PROJECT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/source/projects)
