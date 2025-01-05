@@ -13,7 +13,8 @@ namespace Grainflow
 	{
 	public:
 		t_symbol *name;
-		t_gpointer ptr {};
+		t_int channels = 1;
+
 
 		bool get(t_int* size, t_word** vec)
 		{
@@ -38,12 +39,11 @@ namespace Grainflow
 
 		pd_buffer(t_symbol* name = nullptr)
 		{
-			gpointer_unset(&ptr);
 			this->name = name;
 		}
 		~pd_buffer()
 		{
-			gpointer_unset(& ptr);
+
 		}
 	};
 
@@ -62,7 +62,7 @@ namespace Grainflow
 			buffer_info->buffer_frames = size;
 			buffer_info->sample_rate_adjustment = 1;
 			buffer_info->samplerate = io_config.samplerate;
-			buffer_info->n_channels = 1;
+			buffer_info->n_channels = buffer->channels;
 			return true;
 		}
 
