@@ -4,7 +4,7 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "ci" ]
   pull_request:
     branches: [ "master" ]
 
@@ -18,7 +18,7 @@ jobs:
 
 
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
         build_type: [Release]
         include:
           - os: windows-latest
@@ -27,6 +27,9 @@ jobs:
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
 
     steps:
     - uses: actions/checkout@v4
@@ -39,19 +42,30 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: Downloads pd-win
+      
+      shell: bash
+      run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+          curl -L -o pure-data.zip http://msp.ucsd.edu/Software/pd-0.55-0.msw.zip
+          unzip pure-data.zip
+          rm pure-data.zip
+          rm -rf ${{ github.workspace }}/source/pure-data/src
+          cp -RP pd-*/src '${{ github.workspace }}/source/pure-data/'
+          cp pd-*/bin/pd.lib '${{ github.workspace }}/source/pure-data/src'
+          fi
+
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+      run: | 
+        cmake -B Build -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
 
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: |
+        cmake --build Build --config ${{ matrix.build_type }}
 
     #- name: Test
     #  working-directory: ${{ steps.strings.outputs.build-output-dir }}
