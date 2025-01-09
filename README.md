@@ -1,7 +1,7 @@
 ## Nightly Releases
-Win: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-windows-latest.zip
-Mac: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-macos-latest.zip
-CI build for linux currently are not working
+- Win: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-windows-latest.zip
+- Mac: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-macos-latest.zip
+- CI build for linux currently are not working
 ## How to build
 ### Clone this repo 
 ```
