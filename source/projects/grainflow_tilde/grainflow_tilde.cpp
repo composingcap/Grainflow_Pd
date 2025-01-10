@@ -108,6 +108,139 @@ void on_data_thread(int* w)
 	x->data_update = false;
 }
 
+void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
+{
+	if (ac < 1) return;
+	if (strcmp(s->s_name, "state") == 0)
+	{
+		x->state = av->a_type == A_FLOAT ? av->a_w.w_float >= 1 : 0;
+		return;
+	}
+	int start = 0;
+	if (strcmp(s->s_name, "list") == 0)
+	{
+		start = 1;
+		s = av[0].a_w.w_symbol;
+	}
+
+
+	auto success = Grainflow::GF_RETURN_CODE::GF_ERR;
+	if (ac < 2 + start)
+	{
+		success = x->grain_collection->param_set(0, std::string(s->s_name), av[0 + start].a_w.w_float);
+	}
+	else
+	{
+		for (int i = 0; i < x->grain_collection->grains(); ++i)
+		{
+			success = x->grain_collection->param_set(i, std::string(s->s_name),
+			                                         av[(i % (ac - start)) + start].a_w.w_float);
+		}
+	}
+	if (success != Grainflow::GF_RETURN_CODE::GF_SUCCESS)
+	{
+		Grainflow::gf_buffers type;
+		if (buffer_reflection(s->s_name, type))
+		{
+			if (ac < 2)
+			{
+				for (int i = 0; i < x->grain_collection->grains(); ++i)
+				{
+					x->grain_collection->get_buffer(type, i)->set(av[0].a_w.w_symbol);
+					if (type == Grainflow::gf_buffers::buffer)
+					{
+						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
+						                               Grainflow::gf_param_type::value, 1);
+					}
+				}
+			}
+			else
+			{
+				auto arg_counter = 0;
+				auto buffer_counter = 0;
+				auto n_buffers = 0;
+				for (int i = 0; i < ac; ++i) { if (av[i].a_type == A_SYMBOL) ++n_buffers; }
+				if (n_buffers < 1) { return; }
+				for (int i = 0; i < x->grain_collection->grains(); ++i)
+				{
+					x->grain_collection->get_buffer(type, i)->channels = n_buffers;
+					auto tries = 0;
+					while (av[arg_counter % (ac - start) + start].a_type != t_atomtype::A_SYMBOL)
+					{
+						if (tries > 3) return;
+						arg_counter++;
+						tries++;
+					};
+					x->grain_collection->get_buffer(type, i)->set(av[arg_counter % (ac - start) + start].a_w.w_symbol);
+					arg_counter++;
+					if (type == Grainflow::gf_buffers::envelope || type == Grainflow::gf_buffers::glisson_buffer)
+					{
+						auto n_param = type == Grainflow::gf_buffers::envelope
+							               ? Grainflow::gf_param_name::n_envelopes
+							               : Grainflow::gf_param_name::glisson_rows;
+						if (av[arg_counter % (ac - start) + start].a_type == t_atomtype::A_FLOAT)
+						{
+							x->grain_collection->param_set(i + 1, n_param,
+							                               Grainflow::gf_param_type::value,
+							                               static_cast<float>(av[arg_counter % (ac - start) + start].a_w
+								                               .w_float));
+							arg_counter++;
+						}
+						else
+						{
+							x->grain_collection->param_set(i + 1, n_param, Grainflow::gf_param_type::value, 1);
+						}
+					}
+					else if (type == Grainflow::gf_buffers::buffer)
+					{
+						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
+						                               Grainflow::gf_param_type::base, buffer_counter % n_buffers);
+					}
+					buffer_counter++;
+				}
+			}
+			return;
+		}
+		pd_error(x, "grainflow: %s is not a valid parameter name", s->s_name);
+	}
+}
+
+void grainflow_arg_parse(t_grainflow_tilde* x, int ac, t_atom* av)
+{
+	int i = 0;
+	while (i < ac)
+	{
+		if (av[i].a_type != A_SYMBOL)
+		{
+			++i;
+			continue;
+		}
+		auto arg_name = av[i].a_w.w_symbol;
+		if (arg_name->s_name[0] != '-')
+		{
+			++i;
+			continue;
+		}
+
+		auto str_arg_name = &arg_name->s_name[1];
+		auto arg_pin = i;
+		++i;
+		auto arg_count = 0;
+		while (i < ac)
+		{
+			if (av[i].a_type == A_SYMBOL)
+			{
+				auto arg_field = av[i].a_w.w_symbol;
+				if (arg_field->s_name[0] == '-') break;
+			}
+			++arg_count;
+			++i;
+		}
+		grainflow_tilde_anything(x, gensym(str_arg_name), arg_count, &av[arg_pin + 1]);
+	}
+}
+
+
 void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 {
 	s = nullptr;
@@ -161,6 +294,8 @@ void* grainflow_tilde_new(t_symbol* s, int ac, t_atom* av)
 		x->grain_collection->get_grain(i)->set_buffer(Grainflow::gf_buffers::glisson_buffer,
 		                                              new Grainflow::pd_buffer());
 	}
+
+	grainflow_arg_parse(x, ac - 2, &av[2]);
 
 	x->data_thread = std::make_unique<Timer>();
 	x->data_thread->start(std::chrono::milliseconds(33), on_data_thread, reinterpret_cast<int*>(x));
@@ -271,95 +406,6 @@ void grainflow_tilde_float(t_grainflow_tilde* x, t_floatarg f)
 	x->state = f >= 1;
 }
 
-void grainflow_tilde_anything(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
-{
-	if (ac < 1) return;
-	int start = 0;
-	if (strcmp(s->s_name, "list") == 0)
-	{
-		start = 1;
-		s = av[0].a_w.w_symbol;
-	}
-	auto success = Grainflow::GF_RETURN_CODE::GF_ERR;
-	if (ac < 2 + start)
-	{
-		success = x->grain_collection->param_set(0, std::string(s->s_name), av[0 + start].a_w.w_float);
-	}
-	else
-	{
-		for (int i = 0; i < x->grain_collection->grains(); ++i)
-		{
-			success = x->grain_collection->param_set(i, std::string(s->s_name),
-			                                         av[(i % (ac - start)) + start].a_w.w_float);
-		}
-	}
-	if (success != Grainflow::GF_RETURN_CODE::GF_SUCCESS)
-	{
-		Grainflow::gf_buffers type;
-		if (buffer_reflection(s->s_name, type))
-		{
-			if (ac < 2)
-			{
-				for (int i = 0; i < x->grain_collection->grains(); ++i)
-				{
-					x->grain_collection->get_buffer(type, i)->set(av[0].a_w.w_symbol);
-					if (type == Grainflow::gf_buffers::buffer)
-					{
-						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
-						                               Grainflow::gf_param_type::value, 1);
-					}
-				}
-			}
-			else
-			{
-				auto arg_counter = 0;
-				auto buffer_counter = 0;
-				auto n_buffers = 0;
-				for (int i = 0; i < ac; ++i) { if (av[i].a_type == A_SYMBOL) ++n_buffers; }
-				if (n_buffers < 1) { return; }
-				for (int i = 0; i < x->grain_collection->grains(); ++i)
-				{
-					x->grain_collection->get_buffer(type, i)->channels = n_buffers;
-					auto tries = 0;
-					while (av[arg_counter % (ac - start) + start].a_type != t_atomtype::A_SYMBOL)
-					{
-						if (tries > 3) return;
-						arg_counter++;
-						tries++;
-					};
-					x->grain_collection->get_buffer(type, i)->set(av[arg_counter % (ac - start) + start].a_w.w_symbol);
-					arg_counter++;
-					if (type == Grainflow::gf_buffers::envelope || type == Grainflow::gf_buffers::glisson_buffer)
-					{
-						auto n_param = type == Grainflow::gf_buffers::envelope
-							               ? Grainflow::gf_param_name::n_envelopes
-							               : Grainflow::gf_param_name::glisson_rows;
-						if (av[arg_counter % (ac - start) + start].a_type == t_atomtype::A_FLOAT)
-						{
-							x->grain_collection->param_set(i + 1, n_param,
-							                               Grainflow::gf_param_type::value,
-							                               static_cast<float>(av[arg_counter % (ac - start) + start].a_w
-								                               .w_float));
-							arg_counter++;
-						}
-						else
-						{
-							x->grain_collection->param_set(i + 1, n_param, Grainflow::gf_param_type::value, 1);
-						}
-					}
-					else if (type == Grainflow::gf_buffers::buffer)
-					{
-						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
-						                               Grainflow::gf_param_type::base, buffer_counter % n_buffers);
-					}
-					buffer_counter++;
-				}
-			}
-			return;
-		}
-		pd_error(x, "grainflow: %s is not a valid parameter name", s->s_name);
-	}
-}
 
 static void grainflow_tilde_dsp(t_grainflow_tilde* x, t_signal** sp)
 {
@@ -380,6 +426,29 @@ static void grainflow_tilde_dsp(t_grainflow_tilde* x, t_signal** sp)
 	x->blockSize = sp[0]->s_length;
 	x->samplerate = sp[0]->s_sr;
 	dsp_add(grainflow_tilde_perform, 1, x);
+}
+
+void grainflow_param_message(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
+{
+	if (ac < 3) { return; }
+	if (av[0].a_type != A_FLOAT || av[1].a_type != A_SYMBOL) { return; }
+	Grainflow::gf_param_name param;
+	Grainflow::gf_param_type type;
+	int grain_id = av[0].a_w.w_float;
+
+	if (Grainflow::param_reflection(av[1].a_w.w_symbol->s_name, param, type))
+	{
+		if (av[2].a_type != A_FLOAT) { return; }
+		x->grain_collection->param_set(grain_id, param, type, av[2].a_w.w_float);
+		return;
+	}
+	Grainflow::gf_buffers buffer_type;
+	if (Grainflow::buffer_reflection(av[1].a_w.w_symbol->s_name, buffer_type))
+	{
+		if (av[2].a_type != A_SYMBOL) { return; }
+		x->grain_collection->get_buffer(buffer_type, grain_id)->set(av[2].a_w.w_symbol);
+		return;
+	}
 }
 
 void grainflow_stream_set(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
@@ -444,28 +513,6 @@ void grainflow_stream_param_spread(t_grainflow_tilde* x, t_symbol* s, int ac, t_
 	}
 }
 
-void grainflow_param_message(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
-{
-	if (ac < 3) { return; }
-	if (av[0].a_type != A_FLOAT || av[1].a_type != A_SYMBOL) { return; }
-	Grainflow::gf_param_name param;
-	Grainflow::gf_param_type type;
-	int grain_id = av[0].a_w.w_float;
-
-	if (Grainflow::param_reflection(av[1].a_w.w_symbol->s_name, param, type))
-	{
-		if (av[2].a_type != A_FLOAT) { return; }
-		x->grain_collection->param_set(grain_id, param, type, av[2].a_w.w_float);
-		return;
-	}
-	Grainflow::gf_buffers buffer_type;
-	if (Grainflow::buffer_reflection(av[1].a_w.w_symbol->s_name, buffer_type))
-	{
-		if (av[2].a_type != A_SYMBOL) { return; }
-		x->grain_collection->get_buffer(buffer_type, grain_id)->set(av[2].a_w.w_symbol);
-		return;
-	}
-}
 
 void grainflow_param_deviate(t_grainflow_tilde* x, t_symbol* s, int ac, t_atom* av)
 {
