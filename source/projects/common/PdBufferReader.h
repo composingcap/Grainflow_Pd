@@ -62,6 +62,7 @@ namespace Grainflow
 			buffer_info->buffer_frames = size;
 			buffer_info->sample_rate_adjustment = 1;
 			buffer_info->samplerate = io_config.samplerate;
+			buffer_info->one_over_buffer_frames = 1.0f/size;
 			buffer_info->n_channels = buffer->channels;
 			return true;
 		}
