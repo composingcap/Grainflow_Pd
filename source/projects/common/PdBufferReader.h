@@ -16,6 +16,7 @@ namespace Grainflow
 		t_int channels = 1;
 
 
+
 		bool get(t_int* size, t_word** vec)
 		{
 			if (name == nullptr || strcmp(name->s_name, "") == 0) return false;
