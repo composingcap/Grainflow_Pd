@@ -1,4 +1,4 @@
-PROJECT("grainflow_stereoPan_tilde")
+PROJECT("grainflow_multiPan_tilde")
 
 
 include_directories(
@@ -11,11 +11,11 @@ set(
 
 ADD_PD_EXTERNAL(
  ${PROJECT_NAME}
- grainflow.stereoPan~
+ grainflow.multiPan~
  ${SOURCE_FILES})
 
  set(ASSETS
- ${CMAKE_CURRENT_SOURCE_DIR}/grainflow.stereoPan~-help.pd
+ ${CMAKE_CURRENT_SOURCE_DIR}/grainflow.multiPan~-help.pd
  )
  
   file(COPY ${ASSETS} DESTINATION ${PD_OUTPUT_PATH})

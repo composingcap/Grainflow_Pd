@@ -41,6 +41,15 @@ typedef struct _grainflow_stereoPan_tilde
 	t_float pan_spread{0.5f};
 } t_grainflow_stereoPan_tilde;
 
+void message_pan_center(_grainflow_stereoPan_tilde* x, t_float f)
+{
+	x->panner->pan_position = f;
+}
+
+void message_pan_spread(_grainflow_stereoPan_tilde* x, t_float f)
+{
+	x->panner->pan_spread = f;
+}
 
 void* grainflow_stereoPan_tilde_new(t_symbol* s, int ac, t_atom* av)
 {
@@ -53,12 +62,15 @@ void* grainflow_stereoPan_tilde_new(t_symbol* s, int ac, t_atom* av)
 	x->pan_center = 0.5f;
 	x->pan_spread = 0.5f;
 
+
 	if (ac > 0)
 	{
+		if (av[0].a_type != A_FLOAT) { return (void*)x; }
 		x->pan_center = av[0].a_w.w_float;
 	}
 	if (ac > 1)
 	{
+		if (av[0].a_type != A_FLOAT) { return (void*)x; }
 		x->pan_spread = av[1].a_w.w_float;
 	}
 
@@ -139,4 +151,10 @@ extern "C" void setup_grainflow0x2estereoPan_tilde(void)
 	class_addmethod(grainflow_stereoPan_tilde_class,
 	                reinterpret_cast<t_method>(grainflow_stereoPan_tilde_dsp), gensym("dsp"), A_CANT, 0);
 	CLASS_MAINSIGNALIN(grainflow_stereoPan_tilde_class, t_grainflow_stereoPan_tilde, f);
+	class_addmethod(grainflow_stereoPan_tilde_class, reinterpret_cast<t_method>(message_pan_center),
+	                gensym("panCenter"),
+	                A_DEFFLOAT, 0);
+	class_addmethod(grainflow_stereoPan_tilde_class, reinterpret_cast<t_method>(message_pan_spread),
+	                gensym("panSpread"),
+	                A_DEFFLOAT, 0);
 }
