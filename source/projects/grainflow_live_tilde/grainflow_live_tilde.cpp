@@ -30,6 +30,7 @@ namespace Grainflow
 			return ptr;
 		}
 
+
 		static void grainflow_live_free(Grainflow_Live_Tilde* x)
 		{
 			delete[] x->traversal_phasor;
@@ -78,7 +79,10 @@ namespace Grainflow
 					x->input_channel_ptrs[i][j] = &(x->input_channels[i].data()[j * chan_size]);
 				}
 			}
-			x->record_input_ptr[0] = x->input_channel_ptrs[0][0];
+			for (int i = 0; i < x->input_channel_ptrs[0].size(); ++i)
+			{
+				x->record_input_ptr[i] = x->input_channel_ptrs[0][i];
+			}
 
 			config.grain_clock = x->input_channel_ptrs[1].data();
 			config.traversal_phasor = &x->traversal_phasor;
@@ -123,7 +127,7 @@ namespace Grainflow
 			x->recorder->state = x->state && x->rec;
 			x->recorder->process(x->record_input_ptr.data(), 0,
 			                     x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, 0), config.block_size,
-			                     1, config.traversal_phasor[0]);
+			                     x->inlet_data[0].nchans, config.traversal_phasor[0]);
 
 			config.livemode = true; //We do not know the buffer samplerate
 
@@ -153,7 +157,7 @@ namespace Grainflow
 			}
 			x->blockSize = sp[0]->s_length;
 			x->samplerate = sp[0]->s_sr;
-			x->record_input_ptr.resize(1);
+			x->record_input_ptr.resize(x->inlet_data[0].nchans);
 			delete x->traversal_phasor;
 			x->traversal_phasor = new t_sample[x->blockSize];
 			dsp_add(grainflow_live_tilde_perform, 1, x);
@@ -195,6 +199,7 @@ namespace Grainflow
 			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(stream_param_spread),
 			                gensym("streamSpread"),
 			                A_GIMME, 0);
+
 
 			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_anything), gensym("anything"),
 			                A_GIMME, 0);

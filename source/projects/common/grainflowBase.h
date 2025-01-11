@@ -189,8 +189,9 @@ class Grainflow_Base{
 					}
 					else if (type == Grainflow::gf_buffers::buffer)
 					{
-						x->grain_collection->param_set(i, Grainflow::gf_param_name::channel,
+						x->grain_collection->param_set(i+1, Grainflow::gf_param_name::channel,
 						                               Grainflow::gf_param_type::base, buffer_counter % n_buffers);
+						x->grain_collection->get_buffer(type, i)->set_channels(&av[start], ac-start);
 					}
 					buffer_counter++;
 				}

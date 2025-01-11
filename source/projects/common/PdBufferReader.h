@@ -14,10 +14,16 @@ namespace Grainflow
 	public:
 		t_symbol *name;
 		t_int channels = 1;
+		std::vector<t_symbol*> channel_arrays;
 
 
 
 		bool get(t_int* size, t_word** vec, bool redraw = false)
+		{
+			return get_by_name(this->name, size, vec, redraw);
+		}
+
+		bool get_by_name(t_symbol* name, t_int* size, t_word** vec, bool redraw = false)
 		{
 			if (name == nullptr || strcmp(name->s_name, "") == 0) return false;
 			t_garray* buffer_ref;
@@ -28,16 +34,45 @@ namespace Grainflow
 			}
 			int i_size;
 			if (!garray_getfloatwords(buffer_ref, &i_size, vec))
-				{
-					return false;
-				}
+			{
+				return false;
+			}
 			*size = i_size;
 			if (redraw) { garray_redraw(buffer_ref); };
 			return true;
 		}
+
 		void set(t_symbol* name)
 		{
 			this->name = name;
+			channels = 1;
+			channel_arrays.clear();
+		}
+
+		bool set_channels(t_atom* names, t_int count)
+		{
+			if (names[0].a_type != A_SYMBOL) { return false; }
+			for (int i = 0; i < count; ++i)
+			{
+				if (names[i].a_type != A_SYMBOL) {return false;}
+			}
+			this->name = names[0].a_w.w_symbol;
+			channels = count;
+			channel_arrays.resize(count);
+			for (int i = 0; i< count; ++i)
+			{
+				channel_arrays[i] = names[i].a_w.w_symbol;
+			}
+			return true;
+		}
+
+		bool get_channel(const t_int channel, t_int* size, t_word** vec, bool redraw = false)
+		{	
+			if (channel_arrays.empty())
+			{
+				return get(size, vec, redraw);
+			}
+			return get_by_name(channel_arrays[channel%this->channels], size, vec, redraw);
 		}
 
 		pd_buffer(t_symbol* name = nullptr)
@@ -119,11 +154,12 @@ namespace Grainflow
 			if (buffer == nullptr) return;
 			t_int frames{ 0 };
 			t_word* vec;
-			if (!buffer->get(&frames, &vec, true)) return;
+			t_int channels = 0;
+
+			if (!buffer->get_channel(channel, &frames,&vec, true)) return;
 
 			auto is_segmented = (start_position + size) >= frames;
 			auto use_overdub = overdub >= 0.0001f;
-			int channels = 1;
 
 			if (use_overdub)
 			{
@@ -131,14 +167,14 @@ namespace Grainflow
 				{
 					for (int i = 0; i < size; i++)
 					{
-						scratch[i] = vec[(start_position + i) * channels + channel].w_float * overdub;
+						scratch[i] = vec[(start_position + i)].w_float * overdub;
 					}
 				}
 				else
 				{
 					for (int i = 0; i < size; i++)
 					{
-						scratch[i] = vec[(((start_position + i) % frames) * channels + channel)].w_float * overdub;
+						scratch[i] = vec[(((start_position + i) % frames))].w_float * overdub;
 					}
 				}
 			}
@@ -151,14 +187,14 @@ namespace Grainflow
 			{
 				for (int i = 0; i < size; i++)
 				{
-					vec[(start_position + i) * channels + channel].w_float = samples[i] * (1 - overdub) + scratch[i];
+					vec[(start_position + i)].w_float = samples[i] * (1 - overdub) + scratch[i];
 				}
 				return;
 			}
 			auto first_chunk = (start_position + size) - frames;
 			for (int i = 0; i < size; i++)
 			{
-				vec[(((start_position + i) % frames) * channels + channel)].w_float = samples[i] * (1 - overdub) +
+				vec[(((start_position + i) % frames))].w_float = samples[i] * (1 - overdub) +
 					scratch[i];
 			}
 
