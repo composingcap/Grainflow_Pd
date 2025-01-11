@@ -17,10 +17,11 @@ namespace Grainflow
 
 
 
-		bool get(t_int* size, t_word** vec)
+		bool get(t_int* size, t_word** vec, bool redraw = false)
 		{
 			if (name == nullptr || strcmp(name->s_name, "") == 0) return false;
 			t_garray* buffer_ref;
+
 			if (!(buffer_ref = (t_garray*)pd_findbyclass(name, garray_class)))
 			{
 				return false;
@@ -31,6 +32,7 @@ namespace Grainflow
 					return false;
 				}
 			*size = i_size;
+			if (redraw) { garray_redraw(buffer_ref); };
 			return true;
 		}
 		void set(t_symbol* name)
@@ -100,6 +102,7 @@ namespace Grainflow
 		{
 			t_int bsize{0};
 			t_word* vec;
+	
 			if (!buffer->get(&bsize, &vec)) return;
 			
 			for (int i = 0; i < size; ++i)
@@ -116,7 +119,7 @@ namespace Grainflow
 			if (buffer == nullptr) return;
 			t_int frames{ 0 };
 			t_word* vec;
-			if (!buffer->get(&frames, &vec)) return;
+			if (!buffer->get(&frames, &vec, true)) return;
 
 			auto is_segmented = (start_position + size) >= frames;
 			auto use_overdub = overdub >= 0.0001f;
@@ -141,7 +144,7 @@ namespace Grainflow
 			}
 			else
 			{
-				memset(vec, 0.0, sizeof(double) * size);
+				memset(scratch, 0.0, sizeof(t_sample) * size);
 			}
 
 			if (!is_segmented)
@@ -158,6 +161,7 @@ namespace Grainflow
 				vec[(((start_position + i) % frames) * channels + channel)].w_float = samples[i] * (1 - overdub) +
 					scratch[i];
 			}
+
 
 		};
 

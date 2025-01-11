@@ -16,6 +16,8 @@ namespace Grainflow
 		int record_input_channels = 1;
 		std::vector<t_sample*> record_input_ptr;
 		t_sample* traversal_phasor;
+		bool rec = true;
+		bool play = true;
 
 		static void* grainflow_live_tilde_new(t_symbol* s, int ac, t_atom* av)
 		{
@@ -23,6 +25,8 @@ namespace Grainflow
 			auto x = reinterpret_cast<Grainflow_Live_Tilde*>(pd_new(grainflow_live_class));
 			auto ptr = grainflow_create(x, ac, av);
 			x->recorder = std::make_unique<gfRecorder<pd_buffer, internal_block, t_sample>>(x->buffer_reader);
+			x->play = true;
+			x->rec = true;
 			return ptr;
 		}
 
@@ -30,6 +34,26 @@ namespace Grainflow
 		{
 			delete[] x->traversal_phasor;
 			grainflow_free(x);
+		}
+
+		static void message_overdub(Grainflow_Live_Tilde* x, t_floatarg f)
+		{
+			x->recorder->overdub = std::clamp(f, 0.0f, 1.0f);
+		}
+
+		static void message_freeze(Grainflow_Live_Tilde* x, t_floatarg f)
+		{
+			x->recorder->freeze = f >= 1;
+		}
+
+		static void message_record(Grainflow_Live_Tilde* x, t_floatarg f)
+		{
+			x->rec = f >= 1;
+		}
+
+		static void message_play(Grainflow_Live_Tilde* x, t_floatarg f)
+		{
+			x->play = f >= 1;
 		}
 
 		static void grainflow_live_setup_inputs(Grainflow_Live_Tilde* x, Grainflow::gf_io_config<t_sample>& config)
@@ -96,14 +120,14 @@ namespace Grainflow
 			grainflow_live_setup_inputs(x, config);
 			grainflow_live_setup_outputs(x, config);
 
-			x->recorder->state = x->state;
+			x->recorder->state = x->state && x->rec;
 			x->recorder->process(x->record_input_ptr.data(), 0,
 			                     x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, 0), config.block_size,
 			                     1, config.traversal_phasor[0]);
 
 			config.livemode = true; //We do not know the buffer samplerate
 
-			if (!x->state) return w + 2;
+			if (!x->state || !x->play) return w + 2;
 			x->grain_collection->process(config);
 			if (x->data_update) { return w + 2; }
 			collect_grain_info(&x->grain_data, &config, x->grain_collection->active_grains());
@@ -174,6 +198,16 @@ namespace Grainflow
 
 			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_anything), gensym("anything"),
 			                A_GIMME, 0);
+
+
+			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_overdub), gensym("overdub"),
+			                A_FLOAT, 0);
+			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_freeze), gensym("freeze"),
+			                A_FLOAT, 0);
+			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_record), gensym("rec"),
+			                A_FLOAT, 0);
+			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_play), gensym("play"),
+			                A_FLOAT, 0);
 		}
 	};
 }
