@@ -86,6 +86,8 @@ class Grainflow_Base{
 	std::mutex data_lock;
 	bool data_update;
 
+	std::vector<std::tuple<t_symbol*, void(*)(T*, t_symbol*, int, t_atom*)>> additional_args;
+
 	bool state = false;
 
     public:
@@ -119,6 +121,17 @@ class Grainflow_Base{
 		s = av[0].a_w.w_symbol;
 	}
 
+		for (auto& i: x->additional_args)
+		{
+			if (strcmp(std::get<0>(i)->s_name, s->s_name) == 0)
+			{
+				auto m = std::get<1>(i);
+				if (m == nullptr) break;
+				
+				m(x, s, ac - start, &av[start]);
+				return;
+			}
+		}
 
 	auto success = Grainflow::GF_RETURN_CODE::GF_ERR;
 	if (ac < 2 + start)

@@ -19,17 +19,6 @@ namespace Grainflow
 		bool rec = true;
 		bool play = true;
 
-		static void* grainflow_live_tilde_new(t_symbol* s, int ac, t_atom* av)
-		{
-			s = nullptr;
-			auto x = reinterpret_cast<Grainflow_Live_Tilde*>(pd_new(grainflow_live_class));
-			auto ptr = grainflow_create(x, ac, av);
-			x->recorder = std::make_unique<gfRecorder<pd_buffer, internal_block, t_sample>>(x->buffer_reader);
-			x->play = true;
-			x->rec = true;
-			return ptr;
-		}
-
 
 		static void grainflow_live_free(Grainflow_Live_Tilde* x)
 		{
@@ -37,24 +26,49 @@ namespace Grainflow
 			grainflow_free(x);
 		}
 
-		static void message_overdub(Grainflow_Live_Tilde* x, t_floatarg f)
+		static void message_overdub(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
 		{
-			x->recorder->overdub = std::clamp(f, 0.0f, 1.0f);
+			if (ac < 1) { return; }
+			if (av[0].a_type != A_FLOAT) { return; }
+			x->recorder->overdub = std::clamp(av[0].a_w.w_float, 0.0f, 1.0f);
 		}
 
-		static void message_freeze(Grainflow_Live_Tilde* x, t_floatarg f)
+		static void message_freeze(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
 		{
-			x->recorder->freeze = f >= 1;
+			if (ac < 1) { return; }
+			if (av[0].a_type != A_FLOAT) { return; }
+			x->recorder->freeze = av[0].a_w.w_float >= 1;
 		}
 
-		static void message_record(Grainflow_Live_Tilde* x, t_floatarg f)
+		static void message_record(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
 		{
-			x->rec = f >= 1;
+			if (ac < 1) { return; }
+			if (av[0].a_type != A_FLOAT) { return; }
+			x->rec = av[0].a_w.w_float >= 1;
 		}
 
-		static void message_play(Grainflow_Live_Tilde* x, t_floatarg f)
+		static void message_play(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
 		{
-			x->play = f >= 1;
+			if (ac < 1) { return; }
+			if (av[0].a_type != A_FLOAT) { return; }
+			x->play = av[0].a_w.w_float >= 1;
+		}
+
+		static void* grainflow_live_tilde_new(t_symbol* s, int ac, t_atom* av)
+		{
+			s = nullptr;
+			auto x = reinterpret_cast<Grainflow_Live_Tilde*>(pd_new(grainflow_live_class));
+			x->buffer_reader = pd_buffer_reader::get_buffer_reader();
+			x->recorder = std::make_unique<gfRecorder<pd_buffer, internal_block, t_sample>>(x->buffer_reader);
+			x->play = true;
+			x->rec = true;
+			x->additional_args.push_back({gensym("overdub"), &message_overdub});
+			x->additional_args.push_back({gensym("rec"), &message_record});
+			x->additional_args.push_back({gensym("freeze"), &message_freeze});
+			x->additional_args.push_back({gensym("play"), &message_play});
+			auto ptr = grainflow_create(x, ac, av);
+
+			return ptr;
 		}
 
 		static void grainflow_live_setup_inputs(Grainflow_Live_Tilde* x, Grainflow::gf_io_config<t_sample>& config)
@@ -203,16 +217,6 @@ namespace Grainflow
 
 			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_anything), gensym("anything"),
 			                A_GIMME, 0);
-
-
-			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_overdub), gensym("overdub"),
-			                A_FLOAT, 0);
-			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_freeze), gensym("freeze"),
-			                A_FLOAT, 0);
-			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_record), gensym("rec"),
-			                A_FLOAT, 0);
-			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_play), gensym("play"),
-			                A_FLOAT, 0);
 		}
 	};
 }
