@@ -1,10 +1,12 @@
 //https://stackoverflow.com/questions/71598718/timer-with-stdthread 
+#pragma once
 #include <thread>
 #include <chrono>
 #include <functional>
 #include <cstdio>
 #include <atomic>
 
+namespace Grainflow{
 class Timer {
 public:
     ~Timer() {
@@ -35,3 +37,4 @@ private:
     std::thread mThread{};
     std::atomic_bool mRunning{};
 };
+}
