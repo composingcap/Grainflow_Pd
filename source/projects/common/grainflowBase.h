@@ -94,14 +94,18 @@ class Grainflow_Base{
     static void on_data_thread(int* w)
     {
         auto x = reinterpret_cast<T*>(w);
+		if (x->grain_collection == nullptr) { return; }
+		auto listLen = x->grain_collection->active_grains();
+		if (listLen < 1) { return; }
+		++listLen;
         if (!x->data_update) { return; }
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_state.size(), x->grain_data.grain_state.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_progress.size(), x->grain_data.grain_progress.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_position.size(), x->grain_data.grain_position.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_state.size(), x->grain_data.grain_amp.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_window.size(), x->grain_data.grain_window.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_state.size(), x->grain_data.grain_channel.data());
-        outlet_list(x->info_outlet, &s_list, x->grain_data.grain_state.size(), x->grain_data.grain_stream.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_state.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_progress.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_position.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_amp.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_window.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_channel.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_stream.data());
 
         x->data_update = false;
     }
