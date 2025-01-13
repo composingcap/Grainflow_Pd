@@ -148,7 +148,7 @@ namespace Grainflow
 			if (!x->state || !x->play) return w + 2;
 			x->grain_collection->process(config);
 			if (x->data_update) { return w + 2; }
-			collect_grain_info(&x->grain_data, &config, x->grain_collection->active_grains());
+			collect_grain_info(x, &x->grain_data, &config, x->grain_collection->active_grains());
 			x->data_update = true;
 			return w + 2;
 		}

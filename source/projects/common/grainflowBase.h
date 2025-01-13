@@ -26,6 +26,7 @@ public:
 	std::vector<t_atom> grain_channel;
 	std::vector<t_atom> grain_stream;
 	std::vector<t_atom> grain_amp;
+	std::vector<t_atom> buffer_list;
 private:
 	grain_info(const grain_info& graindata)
 	{
@@ -36,6 +37,7 @@ private:
 		this->grain_channel = graindata.grain_channel;
 		this->grain_stream = graindata.grain_stream;
 		this->grain_amp = graindata.grain_amp;
+		this->buffer_list = graindata.buffer_list;
 	};
 public:
 	void resize(int size)
@@ -47,6 +49,7 @@ public:
 		grain_window.resize(size + 1);
 		grain_channel.resize(size + 1);
 		grain_stream.resize(size + 1);
+		buffer_list.resize(size + 1);
 
 		grain_state[0].a_type = A_SYMBOL;
 		grain_state[0].a_w.w_symbol = gensym("grainState");
@@ -68,6 +71,10 @@ public:
 
 		grain_stream[0].a_type = A_SYMBOL;
 		grain_stream[0].a_w.w_symbol = gensym("grainStream");
+
+
+		buffer_list[0].a_type = A_SYMBOL;
+		buffer_list[0].a_w.w_symbol = gensym("bufferList");
 	}
 };
 template<typename T, int internal_block>
@@ -130,6 +137,8 @@ class Grainflow_Base{
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_window.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_channel.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_stream.data());
+		outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.buffer_list.data());
+
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
     }
@@ -485,7 +494,7 @@ static void grainflow_init(T* x, t_signal** inputs)
 	}
 }
 
-static void collect_grain_info (grain_info* grain_data, const gf_io_config<t_sample>* config, const int grains) {
+static void collect_grain_info (T* x, grain_info* grain_data, const gf_io_config<t_sample>* config, const int grains) {
     for (int i = 0; i < grains; ++i)
 	{
 		auto j = i + 1;
@@ -503,6 +512,8 @@ static void collect_grain_info (grain_info* grain_data, const gf_io_config<t_sam
 		grain_data->grain_progress[j].a_type = A_FLOAT;
 		grain_data->grain_amp[j].a_w.w_float = config->grain_amp[i][0];
 		grain_data->grain_amp[j].a_type = A_FLOAT;
+		grain_data->buffer_list[j].a_w.w_symbol = x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, i)->name;
+		grain_data->buffer_list[j].a_type = A_SYMBOL;
 	}
 
 }
