@@ -48,26 +48,26 @@ public:
 		grain_channel.resize(size + 1);
 		grain_stream.resize(size + 1);
 
-		grain_state[0].a_type = A_FLOAT;
-		grain_state[0].a_w.w_float = 0;
+		grain_state[0].a_type = A_SYMBOL;
+		grain_state[0].a_w.w_symbol = gensym("grainState");
 
-		grain_progress[0].a_type = A_FLOAT;
-		grain_progress[0].a_w.w_float = 1;
+		grain_progress[0].a_type = A_SYMBOL;
+		grain_progress[0].a_w.w_symbol = gensym("grainProgress");
 
-		grain_position[0].a_type = A_FLOAT;
-		grain_position[0].a_w.w_float = 2;
+		grain_position[0].a_type = A_SYMBOL;
+		grain_position[0].a_w.w_symbol = gensym("grainPosition");
 
-		grain_amp[0].a_type = A_FLOAT;
-		grain_amp[0].a_w.w_float = 3;
+		grain_amp[0].a_type = A_SYMBOL;
+		grain_amp[0].a_w.w_symbol = gensym("grainAmp");
 
-		grain_window[0].a_type = A_FLOAT;
-		grain_window[0].a_w.w_float = 4;
+		grain_window[0].a_type = A_SYMBOL;
+		grain_window[0].a_w.w_symbol = gensym("grainWindow");
 
-		grain_channel[0].a_type = A_FLOAT;
-		grain_channel[0].a_w.w_float = 5;
+		grain_channel[0].a_type = A_SYMBOL;
+		grain_channel[0].a_w.w_symbol = gensym("grainChannel");
 
-		grain_stream[0].a_type = A_FLOAT;
-		grain_stream[0].a_w.w_float = 6;
+		grain_stream[0].a_type = A_SYMBOL;
+		grain_stream[0].a_w.w_symbol = gensym("grainStream");
 	}
 };
 template<typename T, int internal_block>
