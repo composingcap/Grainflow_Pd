@@ -28,8 +28,18 @@ public:
 	std::vector<t_atom> grain_channel;
 	std::vector<t_atom> grain_stream;
 	std::vector<t_atom> grain_amp;
-
-
+private:
+	grain_info(const grain_info& graindata)
+	{
+		this->grain_state = graindata.grain_state;
+		this->grain_window = graindata.grain_window;
+		this->grain_progress = graindata.grain_progress;
+		this->grain_position = graindata.grain_position;
+		this->grain_channel = graindata.grain_channel;
+		this->grain_stream = graindata.grain_stream;
+		this->grain_amp = graindata.grain_amp;
+	};
+public:
 	void resize(int size)
 	{
 		grain_state.resize(size + 1);
@@ -82,6 +92,8 @@ class Grainflow_Base{
 	std::array<iolet, 4> inlet_data;
 	std::array<iolet, 8> outlet_data;
 	grain_info grain_data;
+	grain_info grain_data_send;
+
 	std::unique_ptr<Timer> data_thread;
 	std::mutex data_lock;
 	bool data_update;
@@ -97,15 +109,16 @@ class Grainflow_Base{
 		if (x->grain_collection == nullptr) { return; }
 		auto listLen = x->grain_collection->active_grains();
 		if (listLen < 1) { return; }
+		x->grain_data_send = x->grain_data;
 		++listLen;
         if (!x->data_update) { return; }
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_state.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_progress.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_position.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_amp.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_window.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_channel.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_stream.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_state.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_progress.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_position.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_amp.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_window.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_channel.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_stream.data());
 
         x->data_update = false;
     }
