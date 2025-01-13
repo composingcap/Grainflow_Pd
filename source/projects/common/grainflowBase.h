@@ -6,7 +6,6 @@
 #include "PdBufferReader.h"
 #include <gfGrainCollection.h>
 #include <cstring>
-#include "timer.h"
 #include <mutex>
 #include <chrono>
 
@@ -20,7 +19,6 @@ namespace Grainflow{
 struct grain_info
 {
 public:
-
 	std::vector<t_atom> grain_state;
 	std::vector<t_atom> grain_window;
 	std::vector<t_atom> grain_progress;
@@ -93,25 +91,38 @@ class Grainflow_Base{
 	std::array<iolet, 8> outlet_data;
 	grain_info grain_data;
 	grain_info grain_data_send;
+	t_clock* data_clock;
 
-	std::unique_ptr<Timer> data_thread;
 	std::mutex data_lock;
 	bool data_update;
+	bool data_update_in_progress= false;
 
 	std::vector<std::tuple<t_symbol*, void(*)(T*, t_symbol*, int, t_atom*)>> additional_args;
 
 	bool state = false;
 
     public:
-    static void on_data_thread(int* w)
+    static void on_data_clock(int* w)
     {
         auto x = reinterpret_cast<T*>(w);
-		if (x->grain_collection == nullptr) { return; }
+		if (x->grain_collection == nullptr)
+		{
+			clock_delay(x->data_clock, 33);
+			return;
+		}
 		auto listLen = x->grain_collection->active_grains();
-		if (listLen < 1) { return; }
+		if (listLen < 1)
+		{
+			clock_delay(x->data_clock, 33);
+			return;
+		}
 		x->grain_data_send = x->grain_data;
 		++listLen;
-        if (!x->data_update) { return; }
+        if (!x->data_update)
+        {
+			clock_delay(x->data_clock, 33);
+        	return;
+        }
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_state.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_progress.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_position.data());
@@ -119,8 +130,8 @@ class Grainflow_Base{
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_window.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_channel.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_stream.data());
-
         x->data_update = false;
+		clock_delay(x->data_clock, 33);
     }
 
     static void message_anything(T* x, t_symbol* s, int ac, t_atom* av)
@@ -322,16 +333,17 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 
 	arg_parse(x, ac - 2, &av[2]);
 
-	x->data_thread = std::make_unique<Timer>();
-	x->data_thread->start(std::chrono::milliseconds(33), on_data_thread, reinterpret_cast<int*>(x));
+	x->data_clock = clock_new(x, (t_method)on_data_clock);
 
 	return (void*)x;
 }
 
 static void message_float(T* x, t_floatarg f)
-{
-	x->state = f >= 1;
-}
+	{
+		x->state = f >= 1;
+		if (x->state) { clock_delay(x->data_clock, 0); }
+		else { clock_unset(x->data_clock); }
+	}
 
 
 static void param_message(T* x, t_symbol* s, int ac, t_atom* av)
@@ -461,7 +473,7 @@ static void set_auto_overlap(T* x, t_floatarg f)
 
 static void grainflow_free(T* x)
 {
-	x->data_thread->stop();
+	clock_unset(x->data_clock);	
 }
 
 
@@ -474,7 +486,7 @@ static void grainflow_init(T* x, t_signal** inputs)
 }
 
 static void collect_grain_info (grain_info* grain_data, const gf_io_config<t_sample>* config, const int grains) {
-	for (int i = 0; i < grains; ++i)
+    for (int i = 0; i < grains; ++i)
 	{
 		auto j = i + 1;
 		grain_data->grain_stream[j].a_w.w_float = config->grain_stream_channel[i][0];
