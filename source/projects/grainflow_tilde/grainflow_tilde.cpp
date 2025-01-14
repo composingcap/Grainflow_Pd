@@ -27,30 +27,28 @@ namespace Grainflow
 			for (int i = 0; i < x->inlet_data.size(); ++i)
 			{
 				const auto vec = x->inlet_data[i].vec;
-				std::copy_n(vec, x->input_channels[i].size(), x->input_channels[i].data());
+				std::copy_n(vec, x->input_channel_counts[i] * config.block_size, x->input_channels[i]);
 			}
 
 			for (int i = 0; i < x->input_channel_ptrs.size(); ++i)
 			{
-				x->input_channel_ptrs[i].resize(x->inlet_data[i].nchans);
 				const int chan_size = x->blockSize;
-				for (int j = 0; j < x->input_channel_ptrs[i].size(); ++j)
+				for (int j = 0; j < x->input_channel_counts[i]; ++j)
 				{
-					x->input_channel_ptrs[i][j] = &(x->input_channels[i].data()[j * chan_size]);
+					x->input_channel_ptrs[i][j] = &(x->input_channels[i][j * chan_size]);
 				}
 			}
 
-			config.grain_clock = x->input_channel_ptrs[0].data();
-			config.traversal_phasor = x->input_channel_ptrs[1].data();
-			config.fm = x->input_channel_ptrs[2].data();
-			config.am = x->input_channel_ptrs[3].data();
+			config.grain_clock = x->input_channel_ptrs[0];
+			config.traversal_phasor = x->input_channel_ptrs[1];
+			config.fm = x->input_channel_ptrs[2];
+			config.am = x->input_channel_ptrs[3];
 		}
 
 		static void grainflow_setup_outputs(Grainflow_Tilde* x, Grainflow::gf_io_config<t_sample>& config)
 		{
 			for (int i = 0; i < x->output_channel_ptrs.size(); ++i)
 			{
-				x->output_channel_ptrs[i].resize(x->max_grains);
 				const int chan_size = x->blockSize;
 				for (int j = 0; j < x->max_grains; ++j)
 				{
@@ -59,14 +57,14 @@ namespace Grainflow
 				}
 			}
 
-			config.grain_output = x->output_channel_ptrs[0].data();
-			config.grain_state = x->output_channel_ptrs[1].data();
-			config.grain_progress = x->output_channel_ptrs[2].data();
-			config.grain_playhead = x->output_channel_ptrs[3].data();
-			config.grain_amp = x->output_channel_ptrs[4].data();
-			config.grain_envelope = x->output_channel_ptrs[5].data();
-			config.grain_buffer_channel = x->output_channel_ptrs[6].data();
-			config.grain_stream_channel = x->output_channel_ptrs[7].data();
+			config.grain_output = x->output_channel_ptrs[0];
+			config.grain_state = x->output_channel_ptrs[1];
+			config.grain_progress = x->output_channel_ptrs[2];
+			config.grain_playhead = x->output_channel_ptrs[3];
+			config.grain_amp = x->output_channel_ptrs[4];
+			config.grain_envelope = x->output_channel_ptrs[5];
+			config.grain_buffer_channel = x->output_channel_ptrs[6];;
+			config.grain_stream_channel = x->output_channel_ptrs[7];
 		}
 
 		static t_int* grainflow_tilde_perform(t_int* w)

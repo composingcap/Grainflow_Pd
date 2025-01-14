@@ -89,9 +89,10 @@ class Grainflow_Base{
 	t_int max_grains = 1;
 	std::unique_ptr<Grainflow::gf_grain_collection<Grainflow::pd_buffer, internal_block, t_sample>> grain_collection;
 	Grainflow::gf_i_buffer_reader<Grainflow::pd_buffer, t_sample> buffer_reader;
-	std::array<std::vector<t_sample>, 4> input_channels;
-	std::array<std::vector<t_sample*>, 4> input_channel_ptrs;
-	std::array<std::vector<t_sample*>, 8> output_channel_ptrs;
+	std::array<t_sample*, 4> input_channels;
+	std::array<t_int, 4> input_channel_counts;
+	std::array<t_sample**, 4> input_channel_ptrs {nullptr};
+	std::array<t_sample**, 8> output_channel_ptrs {nullptr};
 	int blockSize = 0;
 	int samplerate = 0;
 	std::array<iolet, 4> inlet_data;
@@ -469,6 +470,8 @@ static void param_spread(T* x, t_symbol* s, int ac, t_atom* av)
 	}
 }
 
+
+
 static void set_ngrains(T* x, t_floatarg f)
 {
 	x->grain_collection->set_active_grains(f);
@@ -482,16 +485,49 @@ static void set_auto_overlap(T* x, t_floatarg f)
 
 static void grainflow_free(T* x)
 {
-	clock_unset(x->data_clock);	
+	clock_unset(x->data_clock);
+	for (auto& ch : x->input_channel_ptrs)
+	{
+		free(ch);
+	}
+	for (auto& ch : x->output_channel_ptrs)
+	{
+		free(ch);
+	}
+	for (int i = 0; i < x->input_channels.size(); ++i)
+	{
+		free(x->input_channels[i]);
+	}
 }
 
 
-static void grainflow_init(T* x, t_signal** inputs)
+static void grainflow_init(Grainflow_Base* x, t_signal** inputs)
 {
+	for (int i = 0; i < x->input_channel_counts.size(); ++i)
+	{
+		x->input_channel_counts[i] = inputs[i]->s_nchans;
+	}
+
+	for (int i = 0; i < x->input_channel_ptrs.size(); ++i)
+	{
+		auto& ch = x->input_channel_ptrs[i];
+		free(ch);
+		ch = static_cast<t_sample**>(malloc(sizeof(t_sample**) * x->input_channel_counts[i]));
+	
+
+	}
+	for (auto& ch : x->output_channel_ptrs)
+	{
+		free(ch);
+		ch = static_cast<t_sample**>(malloc(sizeof(t_sample**) * x->max_grains));
+	}
+
 	for (int i = 0; i < x->input_channels.size(); ++i)
 	{
-		x->input_channels[i].resize(inputs[i]->s_length * inputs[i]->s_nchans);
+		free(x->input_channels[i]);
+		x->input_channels[i] = static_cast<t_sample*>(malloc(sizeof(t_sample) * inputs[i]->s_length * inputs[i]->s_nchans));
 	}
+
 }
 
 static void collect_grain_info (T* x, grain_info* grain_data, const gf_io_config<t_sample>* config, const int grains) {
