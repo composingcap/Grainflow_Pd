@@ -30,12 +30,13 @@ typedef struct _grainflow_multiPan_tilde
 
 	std::vector<std::vector<t_sample>> output_channels;
 	std::vector<t_sample*> output_channel_ptrs;
-	std::array<std::vector<t_sample*>, 2> input_channel_ptrs;
+	std::array<t_sample**, 2> input_channel_ptrs;
 	std::unique_ptr<Grainflow::gf_panner<internal_block, Grainflow::gf_pan_mode::unipolar, t_sample>> panner;
 	std::array<iolet, 2> input_data;
 	std::array<iolet, 1> output_data;
 	t_int blocksize{0};
 	t_int samplerate{0};
+	t_int channels{1};
 
 	t_float pan_center{0.5f};
 	t_float pan_spread{0.5f};
@@ -56,6 +57,15 @@ void message_pan_spread(t_grainflow_multiPan_tilde* x, t_float f)
 void message_pan_quantize(t_grainflow_multiPan_tilde* x, t_float f)
 {
 	x->panner->pan_quantization = f;
+}
+
+void grainflow_multiPan_tilde_free(t_grainflow_multiPan_tilde* x)
+{
+	for (auto& ch : x->input_channel_ptrs)
+	{
+		free(ch);
+		ch = nullptr;
+	}
 }
 
 void* grainflow_multiPan_tilde_new(t_symbol* s, int ac, t_atom* av)
@@ -94,7 +104,7 @@ t_int* grainflow_multiPan_tilde_perform(t_int* w)
 	const int size = x->blocksize;
 	for (int i = 0; i < x->input_channel_ptrs.size(); ++i)
 	{
-		for (int j = 0; j < x->input_channel_ptrs[i].size(); ++j)
+		for (int j = 0; j < x->channels; ++j)
 		{
 			x->input_channel_ptrs[i][j] = &(x->input_data[i].vec[size * j]);
 		}
@@ -105,7 +115,7 @@ t_int* grainflow_multiPan_tilde_perform(t_int* w)
 		std::fill_n(x->output_channels[i].data(), x->output_channels[i].size(), 0.0f);
 	}
 
-	x->panner->process(x->input_channel_ptrs[0].data(), x->input_channel_ptrs[1].data(),
+	x->panner->process(x->input_channel_ptrs[0], x->input_channel_ptrs[1],
 	                   x->output_channel_ptrs.data(),
 	                   size);
 
@@ -121,8 +131,8 @@ t_int* grainflow_multiPan_tilde_perform(t_int* w)
 
 static void grainflow_multiPan_tilde_dsp(t_grainflow_multiPan_tilde* x, t_signal** sp)
 {
-	auto channels = std::min(sp[0]->s_nchans, sp[1]->s_nchans);
-	if (channels < 1) return;
+	x->channels = std::min(sp[0]->s_nchans, sp[1]->s_nchans);
+	if (x->channels < 1) return;
 	const auto out_start = 2;
 	signal_setmultiout(&sp[out_start], x->panner_channels);
 	x->output_channels.resize(x->panner_channels);
@@ -134,7 +144,8 @@ static void grainflow_multiPan_tilde_dsp(t_grainflow_multiPan_tilde* x, t_signal
 	}
 	for (auto& ch : x->input_channel_ptrs)
 	{
-		ch.resize(channels);
+		free(ch);
+		ch = static_cast<t_sample**>(malloc(sizeof(t_sample**) * x->channels));
 	}
 
 	for (int i = 0; i < x->input_data.size(); ++i)
@@ -149,7 +160,7 @@ static void grainflow_multiPan_tilde_dsp(t_grainflow_multiPan_tilde* x, t_signal
 	x->samplerate = sp[0]->s_sr;
 
 	x->panner = std::make_unique<Grainflow::gf_panner<internal_block, Grainflow::gf_pan_mode::unipolar, t_sample>>(
-		channels, x->panner_channels);
+		x->channels, x->panner_channels);
 	x->panner->pan_position = x->pan_center;
 	x->panner->pan_spread = x->pan_spread;
 	dsp_add(grainflow_multiPan_tilde_perform, 1, x);
@@ -160,7 +171,8 @@ extern "C" void setup_grainflow0x2emultiPan_tilde(void)
 {
 	grainflow_multiPan_tilde_class = class_new(gensym("grainflow.multiPan~"),
 	                                           reinterpret_cast<t_newmethod>(grainflow_multiPan_tilde_new),
-	                                           0, sizeof(t_grainflow_multiPan_tilde),
+	                                           reinterpret_cast<t_method>(grainflow_multiPan_tilde_free),
+	                                           sizeof(t_grainflow_multiPan_tilde),
 	                                           CLASS_MULTICHANNEL, A_GIMME, 0);
 	class_addmethod(grainflow_multiPan_tilde_class,
 	                reinterpret_cast<t_method>(grainflow_multiPan_tilde_dsp), gensym("dsp"), A_CANT, 0);
