@@ -28,10 +28,12 @@ typedef struct _grainflow_stereoPan_tilde
 	t_inlet* main_inlet;
 	t_inlet* second_inlet;
 	t_outlet* main_outlet;
+	t_outlet* list_outlet;
+
 
 	std::array<std::vector<t_sample>, 2> output_channels;
 	std::array<t_sample*, 2> output_channel_ptrs;
-	std::array<t_sample**, 2> input_channel_ptrs{nullptr};
+	std::array<t_sample**, 2> input_channel_ptrs;
 	std::unique_ptr<Grainflow::gf_panner<internal_block, Grainflow::gf_pan_mode::stereo, t_sample>> panner;
 	std::array<iolet, 2> input_data;
 	std::array<iolet, 1> output_data;
@@ -40,7 +42,30 @@ typedef struct _grainflow_stereoPan_tilde
 	t_int channels{1};
 	t_float pan_center{0.5f};
 	t_float pan_spread{0.5f};
+
+	t_clock* data_clock;
 } t_grainflow_stereoPan_tilde;
+
+void on_data_clock(int* w)
+{
+	auto x = reinterpret_cast<t_grainflow_stereoPan_tilde*>(w);
+	if (x->panner == nullptr)
+	{
+		clock_delay(x->data_clock, 33);
+		return;
+	}
+	auto positions = x->panner->get_positions();
+	std::vector<t_atom> position_atoms;
+	position_atoms.reserve(positions.size());
+	for (auto const position : positions)
+	{
+		position_atoms.push_back(t_atom{A_FLOAT, t_word{position}});
+	}
+
+	outlet_list(x->list_outlet, &s_list, positions.size(), position_atoms.data());
+
+	clock_delay(x->data_clock, 33);
+}
 
 void message_pan_center(_grainflow_stereoPan_tilde* x, t_float f)
 {
@@ -74,6 +99,9 @@ void* grainflow_stereoPan_tilde_new(t_symbol* s, int ac, t_atom* av)
 		if (av[0].a_type != A_FLOAT) { return (void*)x; }
 		x->pan_spread = av[1].a_w.w_float;
 	}
+	x->data_clock = clock_new(x, (t_method)on_data_clock);
+	x->list_outlet = outlet_new(&x->x_obj, &s_list);
+	clock_delay(x->data_clock, 33);
 
 	return (void*)x;
 }
@@ -116,6 +144,7 @@ void grainflow_stereoPan_tilde_free(t_grainflow_stereoPan_tilde* x)
 		free(ch);
 		ch = nullptr;
 	}
+	clock_free(x->data_clock);
 }
 
 static void grainflow_stereoPan_tilde_dsp(t_grainflow_stereoPan_tilde* x, t_signal** sp)

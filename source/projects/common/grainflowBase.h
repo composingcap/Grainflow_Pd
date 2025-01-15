@@ -6,8 +6,6 @@
 #include "PdBufferReader.h"
 #include <gfGrainCollection.h>
 #include <cstring>
-#include <mutex>
-#include <chrono>
 
 namespace Grainflow{
     
@@ -101,7 +99,6 @@ class Grainflow_Base{
 	grain_info grain_data_send;
 	t_clock* data_clock;
 
-	std::mutex data_lock;
 	bool data_update;
 	bool data_update_in_progress= false;
 
