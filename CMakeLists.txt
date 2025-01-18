@@ -28,6 +28,7 @@ set(PD_LIBRARY ${CMAKE_SOURCE_DIR}/source/pure-data/src/pd.lib)
 include_directories(grainflowLib PUBLIC ${CMAKE_SOURCE_DIR}/Source/grainflowLib)
 
 file(COPY assets DESTINATION ${PD_OUTPUT_PATH})
+file(COPY extras DESTINATION ${PD_OUTPUT_PATH})
 
 file(GLOB PD_FILES "${CMAKE_CURRENT_SOURCE_DIR}/source/pure-data/src/*.lib")
 message("PD LIB: ${PD_FILES}")
