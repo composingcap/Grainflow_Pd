@@ -135,7 +135,7 @@ class Grainflow_Base{
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_window.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_channel.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_stream.data());
-		outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.buffer_list.data());
+		outlet_list(x->info_outlet, &s_list, x->grain_data_send.buffer_list.size() , x->grain_data_send.buffer_list.data());
 
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
@@ -545,9 +545,14 @@ static void collect_grain_info (T* x, grain_info* grain_data, const gf_io_config
 		grain_data->grain_progress[j].a_type = A_FLOAT;
 		grain_data->grain_amp[j].a_w.w_float = config->grain_amp[i][0];
 		grain_data->grain_amp[j].a_type = A_FLOAT;
-		grain_data->buffer_list[j].a_w.w_symbol = x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, i)->name;
-		grain_data->buffer_list[j].a_type = A_SYMBOL;
 	}
+	auto& buffer_channels = x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, 0)->channel_arrays;
+	grain_data->buffer_list.resize(buffer_channels.size()+1);
+	for (int j = 0; j < buffer_channels.size(); ++j){
+		grain_data->buffer_list[j+1].a_type = A_SYMBOL;
+		grain_data->buffer_list[j+1].a_w.w_symbol = buffer_channels[j];
+	}
+
 
 }
 

@@ -46,7 +46,8 @@ namespace Grainflow
 		{
 			this->name = name;
 			channels = 1;
-			channel_arrays.clear();
+			channel_arrays.resize(1);
+			channel_arrays[0] = name;
 		}
 
 		bool set_channels(t_atom* names, t_int count)
@@ -77,7 +78,7 @@ namespace Grainflow
 
 		pd_buffer(t_symbol* name = nullptr)
 		{
-			this->name = name;
+			set(name);
 		}
 		~pd_buffer()
 		{
