@@ -47,7 +47,6 @@ public:
 		grain_window.resize(size + 1);
 		grain_channel.resize(size + 1);
 		grain_stream.resize(size + 1);
-		buffer_list.resize(size + 1);
 
 		grain_state[0].a_type = A_SYMBOL;
 		grain_state[0].a_w.w_symbol = gensym("grainState");
@@ -70,9 +69,6 @@ public:
 		grain_stream[0].a_type = A_SYMBOL;
 		grain_stream[0].a_w.w_symbol = gensym("grainStream");
 
-
-		buffer_list[0].a_type = A_SYMBOL;
-		buffer_list[0].a_w.w_symbol = gensym("bufferList");
 	}
 };
 template<typename T, int internal_block>
@@ -96,7 +92,6 @@ class Grainflow_Base{
 	std::array<iolet, 4> inlet_data;
 	std::array<iolet, 8> outlet_data;
 	grain_info grain_data;
-	grain_info grain_data_send;
 	t_clock* data_clock;
 
 	bool data_update;
@@ -121,21 +116,19 @@ class Grainflow_Base{
 			clock_delay(x->data_clock, 33);
 			return;
 		}
-		x->grain_data_send = x->grain_data;
 		++listLen;
         if (!x->data_update)
         {
 			clock_delay(x->data_clock, 33);
         	return;
         }
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_state.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_progress.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_position.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_amp.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_window.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_channel.data());
-        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data_send.grain_stream.data());
-		outlet_list(x->info_outlet, &s_list, x->grain_data_send.buffer_list.size() , x->grain_data_send.buffer_list.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_state.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_progress.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_position.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_amp.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_window.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_channel.data());
+        outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_stream.data());
 
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
@@ -146,7 +139,8 @@ class Grainflow_Base{
 	if (ac < 1) return;
 	if (strcmp(s->s_name, "state") == 0)
 	{
-		x->state = av->a_type == A_FLOAT ? av->a_w.w_float >= 1 : 0;
+		if(av[0].a_type!= A_FLOAT) {return;}
+		message_float(x,av[0].a_w.w_float);
 		return;
 	}
 	int start = 0;
@@ -244,6 +238,8 @@ class Grainflow_Base{
 					buffer_counter++;
 				}
 			}
+			collect_array_info(x);
+			output_array_info(x);
 			return;
 		}
 		pd_error(x, "grainflow: %s is not a valid parameter name", s->s_name);
@@ -284,6 +280,23 @@ static void arg_parse(T* x, int ac, t_atom* av)
 		message_anything(x, gensym(str_arg_name), arg_count, &av[arg_pin + 1]);
 	}
 }
+
+static void collect_array_info(T* x){
+	auto& arrays = x->grain_collection->get_buffer(gf_buffers::buffer, 0)->channel_arrays;
+	x->grain_data.buffer_list.resize(arrays.size()+1);
+	x->grain_data.buffer_list[0].a_type = A_SYMBOL;
+	x->grain_data.buffer_list[0].a_w.w_symbol = gensym("bufferList");
+	for (int i = 0; i< arrays.size(); ++i){
+		x->grain_data.buffer_list[i+1].a_type = A_SYMBOL;
+		x->grain_data.buffer_list[i+1].a_w.w_symbol = arrays[i];
+	}
+}
+
+static void output_array_info(T* x){
+	if (x->grain_data.buffer_list.size() < 2) {return;}
+	outlet_list(x->info_outlet, &s_list, x->grain_data.buffer_list.size(), x->grain_data.buffer_list.data());
+}
+
 
 static void* grainflow_create(T* x, int ac, t_atom* av)
 {
@@ -341,6 +354,8 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 	arg_parse(x, ac - 2, &av[2]);
 
 	x->data_clock = clock_new(x, (t_method)on_data_clock);
+	collect_array_info(x);
+	output_array_info(x);
 
 	return (void*)x;
 }
@@ -348,7 +363,11 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 static void message_float(T* x, t_floatarg f)
 	{
 		x->state = f >= 1;
-		if (x->state) { clock_delay(x->data_clock, 0); }
+		if (x->state) { 
+			collect_array_info(x);
+			output_array_info(x);
+			clock_delay(x->data_clock, 0); 
+			}
 		else { clock_unset(x->data_clock); }
 	}
 
