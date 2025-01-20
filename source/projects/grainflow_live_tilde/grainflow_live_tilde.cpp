@@ -66,6 +66,7 @@ namespace Grainflow
 			x->additional_args.push_back({gensym("rec"), &message_record});
 			x->additional_args.push_back({gensym("freeze"), &message_freeze});
 			x->additional_args.push_back({gensym("play"), &message_play});
+			x->update_buffers_each_frame = true;
 			auto ptr = grainflow_create(x, ac, av);
 
 			return ptr;

@@ -96,6 +96,7 @@ class Grainflow_Base{
 
 	bool data_update;
 	bool data_update_in_progress= false;
+	bool update_buffers_each_frame = false;
 
 	std::vector<std::tuple<t_symbol*, void(*)(T*, t_symbol*, int, t_atom*)>> additional_args;
 
@@ -129,7 +130,7 @@ class Grainflow_Base{
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_window.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_channel.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_stream.data());
-
+		if(x->update_buffers_each_frame){output_array_info(x);}
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
     }
