@@ -87,7 +87,7 @@ namespace Grainflow
 		static void grainflow_tilde_dsp(Grainflow_Tilde* x, t_signal** sp)
 		{
 			x->max_grains = std::max<t_int>(x->max_grains, 1);
-
+			if (x->grain_collection == nullptr) { return; }
 			x->grain_data.resize(
 				(x->grain_collection != nullptr) ? x->grain_collection->active_grains() : x->max_grains);
 			grainflow_init(x, sp);

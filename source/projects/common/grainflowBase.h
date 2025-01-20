@@ -283,6 +283,7 @@ static void arg_parse(T* x, int ac, t_atom* av)
 }
 
 static void collect_array_info(T* x){
+	if (x->grain_collection == nullptr || x->grain_collection->grains() < 1) { return; }
 	auto& arrays = x->grain_collection->get_buffer(gf_buffers::buffer, 0)->channel_arrays;
 	x->grain_data.buffer_list.resize(arrays.size()+1);
 	x->grain_data.buffer_list[0].a_type = A_SYMBOL;
