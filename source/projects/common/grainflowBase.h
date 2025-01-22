@@ -302,8 +302,13 @@ static void output_array_info(T* x){
 
 static void* grainflow_create(T* x, int ac, t_atom* av)
 {
+	if (ac < 2)
+	{
+		pd_error(x, "grainflow: must be instantiated with two arguments- buffer-name ngrains", "");
+		return (void*)x;
+	}
 
-	x->max_grains = static_cast<int>(av[1].a_w.w_float);
+	x->max_grains = static_cast<int>(std::max(1.0f,av[1].a_w.w_float));
 
 	for (auto& inlet : x->inlets)
 	{
@@ -315,12 +320,6 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 	{
 		auto outlet = x->outlets[i];
 		outlet = outlet_new(&x->x_obj, &s_signal);
-	}
-
-	if (ac < 2)
-	{
-		pd_error("grainflow~: must be instantiated with two arguments- buffer-name ngrains", "");
-		return (void*)x;
 	}
 
 	t_symbol* envName = gensym("default");
