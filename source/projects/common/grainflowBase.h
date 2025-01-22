@@ -503,7 +503,7 @@ static void set_auto_overlap(T* x, t_floatarg f)
 
 static void grainflow_free(T* x)
 {
-	clock_unset(x->data_clock);
+	if (x->data_clock != nullptr) { clock_unset(x->data_clock); }
 	for (auto& ch : x->input_channel_ptrs)
 	{
 		free(ch);
@@ -516,6 +516,7 @@ static void grainflow_free(T* x)
 	{
 		free(x->input_channels[i]);
 	}
+	x->~T();
 }
 
 
