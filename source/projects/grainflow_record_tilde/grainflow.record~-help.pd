@@ -1,5 +1,5 @@
 #N canvas 827 239 734 565 12;
-#X declare -path ../assets;
+#X declare -path ./assets;
 #N canvas 0 0 450 250 (subpatch) 0;
 #X array _gf_record 41000 float 0;
 #X coords 0 1 40999 -1 200 140 1;
@@ -19,7 +19,7 @@
 #X obj 221 16 bng 19 250 50 0 empty empty empty 0 -10 0 12 #fcfcfc #000000 #000000;
 #X text 250 17 <= Play soundfile;
 #X msg 218 49 open frogs.wav 0 \, start;
-#X obj 343 84 declare -path ../assets;
+#X obj 343 84 declare -path ./assets;
 #X connect 1 0 11 1;
 #X connect 1 0 3 0;
 #X connect 2 0 1 0;

@@ -33,6 +33,7 @@ namespace Grainflow
 		static void grainflow_record_free(Grainflow_Record_Tilde* x)
 		{
 			delete[] x->traversal_phasor;
+			x->~Grainflow_Record_Tilde();
 		}
 
 		static void message_buffer(Grainflow_Record_Tilde* x, t_symbol* s, int ac, t_atom* av)
@@ -65,6 +66,11 @@ namespace Grainflow
 			if (ac < 1) { return; }
 			if (av[0].a_type != A_FLOAT) { return; }
 			x->recorder->state = av[0].a_w.w_float >= 1;
+		}
+
+		static void message_float(Grainflow_Record_Tilde* x, t_float value)
+		{
+			x->recorder->state = value >= 1;
 		}
 
 		static void* grainflow_record_tilde_new(t_symbol* s, int ac, t_atom* av)
@@ -109,6 +115,7 @@ namespace Grainflow
 			x->traversal_outlet.vec = sp[1]->s_vec;
 			delete x->traversal_phasor;
 			x->traversal_phasor = new t_sample[x->blockSize];
+			std::fill_n(x->traversal_phasor, x->blockSize, 0.0f);
 			dsp_add(grainflow_record_tilde_perform, 1, x);
 		}
 
@@ -123,7 +130,7 @@ namespace Grainflow
 			class_addmethod(grainflow_record_class,
 			                reinterpret_cast<t_method>(grainflow_record_tilde_dsp), gensym("dsp"), A_CANT, 0);
 			CLASS_MAINSIGNALIN(grainflow_record_class, Grainflow_Record_Tilde, f);
-			class_addfloat(grainflow_record_class, reinterpret_cast<t_method>(message_record));
+			class_addfloat(grainflow_record_class, reinterpret_cast<t_method>(message_float));
 			class_addmethod(grainflow_record_class, reinterpret_cast<t_method>(message_record), gensym("rec"),
 			                A_FLOAT, 0);
 			class_addmethod(grainflow_record_class, reinterpret_cast<t_method>(message_freeze), gensym("freeze"),
