@@ -336,11 +336,12 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 	}
 
 
+
 	x->buffer_reader = Grainflow::pd_buffer_reader::get_buffer_reader();
 	x->grain_collection = std::make_unique<Grainflow::gf_grain_collection<
 		Grainflow::pd_buffer, internal_block, t_sample>>(
 		x->buffer_reader, x->max_grains);
-
+	x->grain_data.resize((x->max_grains));
 	x->grain_collection->set_active_grains(x->max_grains);
 
 	for (int i = 0; i < x->grain_collection->grains(); ++i)

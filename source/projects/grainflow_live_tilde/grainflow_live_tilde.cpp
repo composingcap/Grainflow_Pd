@@ -173,7 +173,6 @@ namespace Grainflow
 		{
 			x->max_grains = std::max<t_int>(x->max_grains, 1);
 			if (x->grain_collection == nullptr) { return; }
-			x->grain_data.resize(x->grain_collection->active_grains());
 			grainflow_init(x, sp);
 			for (int i = 0; i < x->outlets.size(); ++i)
 			{
