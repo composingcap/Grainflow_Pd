@@ -19,6 +19,22 @@ namespace Grainflow
 		bool rec = true;
 		bool play = true;
 
+		static void on_data_loop(Grainflow_Live_Tilde* x)
+		{
+			if (x->recorder == nullptr) { return; }
+			std::array<t_atom, 2> outputs;
+			outputs[0].a_type = A_SYMBOL;
+			outputs[0].a_w.w_symbol = gensym("recordHead");
+			outputs[1].a_type = A_FLOAT;
+			outputs[1].a_w.w_float = x->recorder->write_position_norm;
+			outlet_list(x->info_outlet, &s_list, outputs.size(), outputs.data());
+
+			outputs[0].a_type = A_SYMBOL;
+			outputs[0].a_w.w_symbol = gensym("recordHeadSamps");
+			outputs[1].a_type = A_FLOAT;
+			outputs[1].a_w.w_float = x->recorder->write_position_samps;
+			outlet_list(x->info_outlet, &s_list, outputs.size(), outputs.data());
+		}
 
 		static void grainflow_live_free(Grainflow_Live_Tilde* x)
 		{
@@ -66,6 +82,7 @@ namespace Grainflow
 			x->additional_args.push_back({gensym("rec"), &message_record});
 			x->additional_args.push_back({gensym("freeze"), &message_freeze});
 			x->additional_args.push_back({gensym("play"), &message_play});
+			x->data_clock_ex.push_back(&on_data_loop);
 			x->update_buffers_each_frame = true;
 			auto ptr = grainflow_create(x, ac, av);
 

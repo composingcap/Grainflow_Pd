@@ -99,8 +99,9 @@ class Grainflow_Base{
 	bool update_buffers_each_frame = false;
 
 	std::vector<std::tuple<t_symbol*, void(*)(T*, t_symbol*, int, t_atom*)>> additional_args;
-
+	std::vector<void(*)(T*)> data_clock_ex;
 	bool state = false;
+
 
     public:
     static void on_data_clock(int* w)
@@ -123,6 +124,10 @@ class Grainflow_Base{
 			clock_delay(x->data_clock, 33);
         	return;
         }
+		for (auto& func: x->data_clock_ex)
+		{
+			func(x);
+		}
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_state.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_progress.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_position.data());
@@ -134,6 +139,8 @@ class Grainflow_Base{
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
     }
+
+
 
     static void message_anything(T* x, t_symbol* s, int ac, t_atom* av)
 {
