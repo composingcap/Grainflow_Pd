@@ -46,7 +46,7 @@ typedef struct _grainflow_stereoPan_tilde
 	t_clock* data_clock;
 } t_grainflow_stereoPan_tilde;
 
-void on_data_clock(int* w)
+void grainflow_stereoPan_on_data_clock(int* w)
 {
 	auto x = reinterpret_cast<t_grainflow_stereoPan_tilde*>(w);
 	if (x->panner == nullptr)
@@ -99,7 +99,7 @@ void* grainflow_stereoPan_tilde_new(t_symbol* s, int ac, t_atom* av)
 		if (av[0].a_type != A_FLOAT) { return (void*)x; }
 		x->pan_spread = av[1].a_w.w_float;
 	}
-	x->data_clock = clock_new(x, (t_method)on_data_clock);
+	x->data_clock = clock_new(x, (t_method)grainflow_stereoPan_on_data_clock);
 	x->list_outlet = outlet_new(&x->x_obj, &s_list);
 	clock_delay(x->data_clock, 33);
 
