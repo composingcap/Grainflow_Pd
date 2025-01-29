@@ -1,4 +1,11 @@
-#include"grainflowBase.h"
+#pragma once
+#include <m_pd.h>
+#include <algorithm>
+#include <vector>
+#include <array>
+#include "PdBufferReader.h"
+#include <gfGrainCollection.h>
+#include <cstring>
 #include <gfRecord.h>
 
 namespace Grainflow
@@ -7,6 +14,11 @@ namespace Grainflow
 	{
 		static t_class* grainflow_record_class;
 		constexpr int internal_block = 16;
+		struct iolet
+		{
+			t_sample* vec;
+			t_int nchans;
+		};
 	};
 
 	class Grainflow_Record_Tilde
