@@ -1,6 +1,6 @@
-#N canvas 733 172 200 299 12;
+#N canvas 733 172 1070 528 12;
 #X obj 14 26 hsl 205 22 10 2000 0 0 empty empty grainsize 10 -8 0 12 #fcfbf7 #87aaff #000000 0 1;
-#X floatatom 225 26 4 0 1 0 - - - 16;
+#X floatatom 225 26 6 0 0 0 - - - 0;
 #X obj 225 176 outlet;
 #X msg 225 72 set \$1;
 #X obj 11 -47 inlet;
