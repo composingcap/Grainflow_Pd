@@ -97,7 +97,7 @@ class Grainflow_Base{
 	bool data_update;
 	bool data_update_in_progress= false;
 	bool update_buffers_each_frame = false;
-
+	bool update_buffers_next_frame = false;
 	std::vector<std::tuple<t_symbol*, void(*)(T*, t_symbol*, int, t_atom*)>> additional_args;
 	std::vector<void(*)(T*)> data_clock_ex;
 	bool state = false;
@@ -135,7 +135,8 @@ class Grainflow_Base{
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_window.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_channel.data());
         outlet_list(x->info_outlet, &s_list, listLen, x->grain_data.grain_stream.data());
-		if(x->update_buffers_each_frame){output_array_info(x);}
+		if(x->update_buffers_each_frame || x->update_buffers_next_frame){output_array_info(x);}
+		x->update_buffers_next_frame = false;
         x->data_update = false;
 		clock_delay(x->data_clock, 33);
     }
@@ -247,7 +248,6 @@ class Grainflow_Base{
 				}
 			}
 			collect_array_info(x);
-			output_array_info(x);
 			return;
 		}
 		pd_error(x, "grainflow: %s is not a valid parameter name", s->s_name);
@@ -290,20 +290,24 @@ static void arg_parse(T* x, int ac, t_atom* av)
 }
 
 static void collect_array_info(T* x){
-	if (x->grain_collection == nullptr || x->grain_collection->grains() < 1) { return; }
+
+	if (x->grain_collection == nullptr || x->grain_collection->grains() < 1 || x->update_buffers_next_frame) { return; }
+	x->update_buffers_next_frame = true;
 	auto& arrays = x->grain_collection->get_buffer(gf_buffers::buffer, 0)->channel_arrays;
-	x->grain_data.buffer_list.resize(arrays.size()+1);
+	if (x->grain_data.buffer_list.size() < arrays.size() + 1)x->grain_data.buffer_list.resize(arrays.size() + 1); //TODO figure out why deleting when resizing causes a crash
+
 	x->grain_data.buffer_list[0].a_type = A_SYMBOL;
 	x->grain_data.buffer_list[0].a_w.w_symbol = gensym("bufferList");
-	for (int i = 0; i< arrays.size(); ++i){
+	for (int i = 0; i < arrays.size(); ++i){
 		x->grain_data.buffer_list[i+1].a_type = A_SYMBOL;
 		x->grain_data.buffer_list[i+1].a_w.w_symbol = arrays[i];
 	}
+
 }
 
 static void output_array_info(T* x){
 	if (x->grain_data.buffer_list.size() < 2) {return;}
-	outlet_list(x->info_outlet, &s_list, x->grain_data.buffer_list.size(), x->grain_data.buffer_list.data());
+	outlet_list(x->info_outlet, &s_list, x->grain_collection->get_buffer(gf_buffers::buffer, 0)->channel_arrays.size()+1, x->grain_data.buffer_list.data());
 }
 
 
@@ -364,8 +368,6 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 
 	x->data_clock = clock_new(x, (t_method)on_data_clock);
 	collect_array_info(x);
-	output_array_info(x);
-
 	return (void*)x;
 }
 
@@ -576,7 +578,7 @@ static void collect_grain_info (T* x, grain_info* grain_data, const gf_io_config
 		grain_data->grain_amp[j].a_type = A_FLOAT;
 	}
 	auto& buffer_channels = x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, 0)->channel_arrays;
-	grain_data->buffer_list.resize(buffer_channels.size()+1);
+	if (grain_data->buffer_list.size() < buffer_channels.size() + 1)grain_data->buffer_list.resize(buffer_channels.size()+1);
 	for (int j = 0; j < buffer_channels.size(); ++j){
 		grain_data->buffer_list[j+1].a_type = A_SYMBOL;
 		grain_data->buffer_list[j+1].a_w.w_symbol = buffer_channels[j];

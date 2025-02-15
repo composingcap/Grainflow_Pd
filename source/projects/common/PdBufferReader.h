@@ -139,7 +139,7 @@ namespace Grainflow
 			t_int bsize{0};
 			t_word* vec;
 	
-			if (!buffer->get(&bsize, &vec)) return;
+			if (!buffer->get_channel(channel, &bsize, &vec)) return;
 			
 			for (int i = 0; i < size; ++i)
 			{
