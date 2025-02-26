@@ -230,7 +230,7 @@ end
 -- =====================================
 function Wave:borderColor(atoms)
 -- store and change boarder color
-    self.borderC     = { atoms[1], atoms[2], atoms[3], atoms[4] }
+    self.borderC     = { r = atoms[1],  g = atoms[2],  b = atoms[3],  a = atoms[4]  }
     self:repaint(7)
     self:save_state()
 end
@@ -411,7 +411,7 @@ end
 function Wave:paint_layer_7(g)
     local w, h = self:get_size()
     local bc = self.borderC
-    g:set_color(bc[1], bc[2], bc[3], bc[4])
+    g:set_color(bc.r,bc.g,bc.b,bc.a)
     g:stroke_rounded_rect(1, 1, w , h , 9, 2)
 
 end   
