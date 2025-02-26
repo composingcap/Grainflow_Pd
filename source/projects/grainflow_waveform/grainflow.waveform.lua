@@ -6,18 +6,16 @@ function Wave:initialize(sel, atoms)
 
     self.inlets = 1
     self.outlets = 1
-
-    self.width = 400
-    self.height = 200
+    --canvas size (default values)
+    self.width = 300
+    self.height = 100
     
     -- flags
     self.canDraw = false
     self.mouseOn = false 
     self.drawRec = false
     
-
-
-    --mouse info
+    --mouse position info
     self.mousePos = {0,0}
     
     -- grain arrays of data
@@ -29,27 +27,27 @@ function Wave:initialize(sel, atoms)
     self.grainWindow = {}
     self.grainChannel = {}
     self.grainStream = {}
-    self.readPos = 0
+    self.readPosition = 0 --mouse position for reading 
 
     -- color values
-    self.recHeadC =  {r = 100,g = 100, b = 255,a = 1.0}
+    self.recordHeadC =  {r = 100,g = 100, b = 255,a = 1.0}
     self.waveformC = {r = 0,g = 0, b = 0,a = 1.0}
     self.grainC = {r = 121,g = 115, b = 150,a = .5}
     self.mouseC = {r = 100,g = 100, b = 100,a = 1.0}
     self.backgroundC = {r = 255,g = 255, b = 255,a = 1.0}
-    self.borderC = {100,100,100,1}
-    self.grainsize =  .1
-        -- waveform array
-        self.arrayAmount = 0
-        self.arrayLength = 0
-        self.startIndex = 0
-        self.arrayname = {}
-        self.sizeH  =  self.height /  self.arrayAmount
+    self.borderC = {r = 100,g = 100, b = 100,a = 1.0}
+    self.grainSize =  .1
+    
+    -- waveform array
+    self.arrayAmount = 0
+    self.arrayLength = 0
+    self.startIndex = 0
+    self.arrayName = {}
+    self.sizeH  =  self.height /  self.arrayAmount
    
     --redraw speed
     self.delay_time = 20*2
-    self.redawAble = false
-
+    
     self:set_size(self.width, self.height)
     self:restore_state(atoms)
     return true
@@ -60,13 +58,13 @@ function Wave:restore_state(atoms)
 if atoms and #atoms >= 27 then
     self.width       =  atoms[1]
     self.height      =  atoms[2]
-    self.recHeadC    = { r = atoms[3],  g = atoms[4],  b = atoms[5],  a = atoms[6] }
+    self.recordHeadC = { r = atoms[3],  g = atoms[4],  b = atoms[5],  a = atoms[6] }
     self.waveformC   = { r = atoms[7],  g = atoms[8],  b = atoms[9],  a = atoms[10] }
     self.grainC      = { r = atoms[11],  g = atoms[12], b = atoms[13], a = atoms[14] }
     self.mouseC      = { r = atoms[15], g = atoms[16], b = atoms[17], a = atoms[18] }
     self.backgroundC = { r = atoms[19], g = atoms[20], b = atoms[21], a = atoms[22] }
     self.borderC     = { atoms[23], atoms[24], atoms[25], atoms[26] }
-    self.grainsize   = atoms[27]
+    self.grainSize   = atoms[27]
     
     self:repaint()  
 else
@@ -75,25 +73,20 @@ end
 end
 -- =====================================
 function Wave:save_state()
-    function Wave:save_state()
-        -- Ensure that self.borderC exists and has 4 elements.
-        if self.borderC and #self.borderC >= 4 then
-         local state = { self.width, self.height, 
-                self.recHeadC.r, self.recHeadC.g, self.recHeadC.b, self.recHeadC.a,
-                self.waveformC.r, self.waveformC.g, self.waveformC.b, self.waveformC.a,
-                self.grainC.r,    self.grainC.g,    self.grainC.b,    self.grainC.a,
-                self.mouseC.r,    self.mouseC.g,    self.mouseC.b,    self.mouseC.a,
-                self.backgroundC.r, self.backgroundC.g, self.backgroundC.b, self.backgroundC.a,
-                self.borderC[1],  self.borderC[2],  self.borderC[3],  self.borderC[4],
-                self.grainsize
-            }
-            self:set_args(state)
-            pd.post("State saved.")
-        else
-            pd.post("No valid borderC state to save.")
-        end
-    end
-    
+
+
+    local state = { 
+    self.width, self.height, 
+    self.recordHeadC.r, self.recordHeadC.g, self.recordHeadC.b, self.recordHeadC.a,
+    self.waveformC.r, self.waveformC.g, self.waveformC.b, self.waveformC.a,
+    self.grainC.r,    self.grainC.g,    self.grainC.b,    self.grainC.a,
+    self.mouseC.r,    self.mouseC.g,    self.mouseC.b,    self.mouseC.a,
+    self.backgroundC.r, self.backgroundC.g, self.backgroundC.b, self.backgroundC.a,
+    self.borderC.r,  self.borderC.g,  self.borderC.b,  self.borderC.a,
+    self.grainSize
+    }
+    self:set_args(state)
+    pd.post("State saved.")
 end
 -- =====================================
 function Wave:postinitialize()
@@ -112,7 +105,7 @@ function Wave:tick()
     self:repaint(4)  
     self:repaint(5)  
     self:repaint(6) 
-   -- self:repaint(7) 
+    self:repaint(7) 
     self.clock:delay(self.delay_time)
 
 end
@@ -122,7 +115,7 @@ function Wave:mouse_down(x, y)
     if self.mouseOn == false  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
         self.mousePos[1] = normalize(x,0,self.width)
         self.mousePos[2] = normalize(y,self.height,0)
-        self.readPos = self.mousePos[1]
+        self.readPosition = self.mousePos[1]
         self:outlet(1,"list" , self.mousePos)
         self:outlet(1,"list" , self.mousePos)
         self.mouseOn = true
@@ -133,7 +126,7 @@ function Wave:mouse_drag(x, y)
     if self.mouseOn  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
         self.mousePos[1] = normalize(x,0,self.width)
         self.mousePos[2] = normalize(y,self.height,0)
-        self.readPos = self.mousePos[1]
+        self.readPosition = self.mousePos[1]
         self:outlet(1,"list" , self.mousePos)
     end
 end
@@ -141,7 +134,7 @@ end
 function Wave:mouse_up(x, y)
     if self.mouseOn  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
         self.mouseOn = false
-        end
+    end
 end
 -- =====================================
 function Wave:in_1_bang()
@@ -153,15 +146,14 @@ function Wave:in_1(sel, atoms)
     local name = atoms[1]
     local size =  #(atoms)
     local funct =  Wave[name]
-    
-    if type(funct) == "function" then  
+    -- need to make sure its a function to avoid calling nil crashs 
+    if type(funct) == "function" then  -- works when the word list is called first
         local args = {}
         for i = 2, size do
             table.insert(args, atoms[i])
-            
         end
         funct(self,args)
-    else
+    else -- if you send message without prepend list (not how you shoud in pd then this will process the function )
         local nameN = sel
         local nameF =  Wave[nameN]
         if type(nameF) == "function" then 
@@ -172,14 +164,13 @@ function Wave:in_1(sel, atoms)
 end
 
 -- =====================================
-function Wave:buffername(atoms)
-
+function Wave:bufferName(atoms)
+--not needed
 end
 
 -- =====================================
 function Wave:grainState(atoms)
-    self.grainState = atoms
-        
+    self.grainState = atoms    
 end
 -- =====================================
 function Wave:grainProgress(atoms)
@@ -210,18 +201,18 @@ end
 function Wave:bufferList(atoms)
 --self.redawAble = false
 self.arrayAmount = # (atoms)
-self.arrayname = atoms
+self.arrayName = atoms
 self.sizeH =  self.height /  self.arrayAmount
 end
 
 -- =====================================
 function Wave:readPosition(atoms)
-
+--not needed
 end
 -- =====================================
 function Wave:recordHead(atoms)
 
-    self.readPos = atoms[1]  * self.width
+    self.readPosition = atoms[1]  * self.width
     self.drawRec = true
 end
 -- =====================================
@@ -230,40 +221,44 @@ function Wave:recordHeadSamps(atoms)
 end
 -- =====================================
 function Wave:backgroundColor(atoms)
+-- store and change background color
     self.backgroundC = { r = atoms[1], g = atoms[2], b = atoms[3], a = atoms[4] }
     self:save_state()
 end
 -- =====================================
 function Wave:borderColor(atoms)
-    
+-- store and change boarder color
     self.borderC     = { atoms[1], atoms[2], atoms[3], atoms[4] }
     self:repaint(7)
     self:save_state()
 end
 -- =====================================
 function Wave:waveformColor(atoms)
+-- store and change waveform color
     self.waveformC   = { r = atoms[1],  g = atoms[2],  b = atoms[3],  a = atoms[4] }
     self:save_state()
-
 end
 -- =====================================
 function Wave:grainColor(atoms)
+-- store and change grain color
     self.grainC      = { r = atoms[1],  g = atoms[2], b = atoms[3], a = atoms[4] }
     self:save_state()
 end
 -- =====================================
 function Wave:pointerColor(atoms)
+-- store and change mouse pointer bar color   
     self.mouseC      = { r = atoms[1], g = atoms[2], b = atoms[3], a = atoms[4] }
     self:save_state()
 end
 -- =====================================
 function Wave:recordingColor(atoms)
-    self.recHeadC    = { r = atoms[1],  g = atoms[2],  b = atoms[3],  a = atoms[4] }
+-- store and change recording  (for gflowLive) pointer bar color   
+    self.recordHeadC    = { r = atoms[1],  g = atoms[2],  b = atoms[3],  a = atoms[4] }
     self:save_state()
 end
 -- =====================================
-function Wave:setsize(atoms)
-
+function Wave:setSize(atoms)
+-- store changes to size of object with setSize message
     self.width = atoms[1]   
     self.height = atoms[2]
     self:set_size(self.width, self.height)
@@ -271,8 +266,8 @@ function Wave:setsize(atoms)
     self.sizeH  =  self.height /  self.arrayAmount
 end
 -- =====================================
-function Wave:grainsize(atoms)
-
+function Wave:grainSize(atoms)
+-- store changes to size of grain circles with grainSize message
     self.grainsize   = atoms[1]
     self:save_state()
 
@@ -280,157 +275,139 @@ end
 -- ===========Paint functions ==========
 -- =====================================
 function Wave:paint(g)
-    local bckc = self.backgroundC
-    g:set_color(bckc.r,bckc.g,bckc.b,bckc.a)
-    g:fill_rect(0, 0, self.width, self.height)
-
+ -- paint only the background canvas layer   
+    local w, h = self:get_size()
+    g:set_color(self.backgroundC.r,self.backgroundC.g,self.backgroundC.b,self.backgroundC.a)
+    g:fill_rect(0, 0, w, h)
 end
 -- ///////////////////////////////////
 -- ======================================
 function Wave:paint_layer_2(g)
-
+-- draw the waveform 
     local colorW = self.waveformC
-    if self.arrayAmount > 0  then
+    local w, h = self:get_size()
+
+    if self.arrayAmount <= 0  then
+        -- Draw an invisible rectangle so the layer is not empty
+        g:set_color(0,0,0,0)
+        g:fill_rect(0, 0, 1, 1)
+        return
+    end    
+
     local amount = self.arrayAmount
-    local sizeH =  self.height / amount
-    local wavehight = sizeH /2
+    local sizeH =  h / amount
+    local waveHeight = sizeH /2
+    g:set_color(colorW.r,colorW.g,colorW.b,colorW.a)
     
-    for k = 1, amount do
-        local array = pd.table(self.arrayname[k])
-        if array then
+    for k = 1, amount do 
+        local array = pd.table(self.arrayName[k])
+        if array then -- currently drawing only the first sample of each chunk 
             local size = array:length()
             local middleH = sizeH * (k-1) + (sizeH/2)
-            local chunck = math.floor(size / self.width)
-            local startx = 0
-            local starty = (array:get(0) * wavehight) + middleH
-
-            g:set_color(colorW.r,colorW.g,colorW.b,colorW.a)
-            local W = Path(startx,starty )
-            for i = 1, self.width - 1 do
-                local val = array:get(chunck * i)
-                local x = i
-                local y =  (val * wavehight) +  middleH
-                W:line_to(x, y)
+            local chunk = math.floor(size /w)
+            local startY = (array:get(0) * waveHeight) + middleH
+            local W = Path(0,startY )
+            
+            for i = 1, w - 1 do
+                local val = array:get(chunk * i)
+                local y =  (val * waveHeight) +  middleH
+                W:line_to(i, y)
             end
             g:stroke_path(W, 1)
         end
     end
-else 
-        -- Draw an invisible rectangle so the layer is not empty
-        g:set_color(0,0,0,0)
-        g:fill_rect(0, 0, 1, 1)
-
 end
+-- ======================================
 
-end
-function Wave:paint_layer_3(g)
-if    self.canDraw   then
-    local colorW = self.waveformC
-    if self.arrayAmount > 0  then
-        local amount = self.arrayAmount
-        local sizeH =  self.height / amount
-        local wavehight = sizeH /2
-    
-        for k = 1, amount do
-            local array = pd.table(self.arrayname[k])
-            if array then
-                local size = array:length()
-                local middleH = sizeH * (k-1) + (sizeH/2)
-                local chunck = math.floor(size / self.width)
-
-
-                g:set_color(colorW[1],colorW[2],colorW[3],1) 
-                for i = 1, self.width - 1 do
-                    local val = array:get(chunck * i)
-                    local x = i
-                    local y =  (val * wavehight) +  middleH
-                    g:draw_line(x,y ,x, middleH ,1)
-                end
-            
-            end
-        end
-    else 
-        g:set_color(colorW.r,colorW.g,colorW.b,1)
-        local W = Path(0,self.height /2 )
-        W:line_to(self.width, self.height /2 )
-        g:stroke_path(W, 1)
-    end
-else
-        -- Draw an invisible rectangle so the layer is not empty
-        g:set_color(0,0,0,0)
-        g:fill_rect(0, 0, 1, 1)
-
-end
-end
 -- ======================================================
 
 function Wave:paint_layer_4(g)
-    
-    if self.drawRec  then
-    local rc = self.recHeadC
-    g:set_color(rc.r,rc.b,rc.g,rc.a)
-    g:draw_line(self.readPos,0,self.readPos, self.height,2)
+    -- Cache the current state and clear it immediately
+    local drawRec = self.drawRec
     self.drawRec = false
-    else   
-        -- Draw an invisible rectangle so the layer is not empty
-        g:set_color(0,0,0,0)
+    if not drawRec then
+        g:set_color(0, 0, 0, 0)
         g:fill_rect(0, 0, 1, 1)
-        self.drawRec = false
+        return
     end
+
+    local w, h = self:get_size()
+    local rc = self.recordHeadC
+    local readPos = self.readPosition
+    g:set_color(rc.r, rc.b, rc.g, rc.a)
+    g:draw_line(readPos, 0, readPos, h, 2)
+    
 
 end
 -- ======================================================
 function Wave:paint_layer_5(g)
+    local mouseOn = self.mouseOn
+    local drawRec = self.drawRec
 
-    if self.mouseOn and self.drawRec == false then
-    local mc = self.mouseC
-    local x = self.mousePos[1] * self.width
-    local y = (1 - self.mousePos[2]) * self.height
-    g:set_color(mc.r,mc.b , mc.g, mc.a)
-    g:draw_line(x, 0, x, self.height, 2)
-    else
-                -- Draw an invisible rectangle so the layer is not empty
-                g:set_color(0,0,0,0)
-                g:fill_rect(0, 0, 1, 1)
+    if not (mouseOn and not drawRec) then
+        g:set_color(0, 0, 0, 0)
+        g:fill_rect(0, 0, 1, 1)
+        return
     end
+    local w, h = self:get_size()
+    local mc       = self.mouseC
+    local mousePos = self.mousePos
+
+    local x = mousePos[1] * w
+    local y = (1 - mousePos[2]) * h  -- Note: 'y' is computed but not used in drawing
+
+    g:set_color(mc.r, mc.b, mc.g, mc.a)
+    g:draw_line(x, 0, x, h, 2)
 end
+
+
 -- ======================================================
 function Wave:paint_layer_6(g)
-  local gc = self.grainC
+
     local amount = # (self.grainState)
-    if amount > 0  then
-        for i = 1, amount  do
     
-            if self.grainState[i] == 1 and self.grainPosition[i]  and self.grainAmp[i] and self.grainChannel[i] and self.grainProgress[i] then
-
-                local radius = ( self.sizeH * .1) *  (1 - 2 * (self.grainProgress[i] - 0.5)^2)
-        
-                local x = self.grainPosition[i] * self.width
-                local y = (((self.grainChannel[i] - 1) * self.sizeH) + ((1 - self.grainAmp[i]) * self.sizeH) + ( self.sizeH * .1) + 4) * .8
-
-                local brighF = 1 - (self.grainProgress[i] * 1)
-                
-                g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
-              
-                g:fill_ellipse(x- (radius/2),y- (radius/2), radius,radius)
-                
-              --  g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
-    
-              --  g:stroke_ellipse(x- (radius/2),y- (radius/2), radius,radius,1)
-            end
-        end
-    else 
-    
-        -- Draw an invisible rectangle so the layer is not empty
-        g:set_color(0,0,0,0)
+    if amount == 0 then
+        g:set_color(0, 0, 0, 0)
         g:fill_rect(0, 0, 1, 1)
+        return
     end
+    local w, h = self:get_size()
+    local grainState    = self.grainState
+    local grainPosition = self.grainPosition
+    local grainAmp      = self.grainAmp
+    local grainChannel  = self.grainChannel
+    local grainProgress = self.grainProgress
+    local sizeH         = self.sizeH
+    local gc            = self.grainC
 
+
+    for i = 1, amount  do
+    
+        if not (grainState[i] == 1 and grainPosition[i]  and grainAmp[i] and grainChannel[i] and grainProgress[i]) then
+            goto continue
+        end    
+    
+        local radius = ( sizeH * .1) *  (1 - 2 * (grainProgress[i] - 0.5)^2)
+        
+        local x = grainPosition[i] * w
+        local y = (((grainChannel[i] - 1) * sizeH) + ((1 - grainAmp[i]) * sizeH) + (sizeH * .1) + 4) * .8
+
+        local brighF = 1 - (grainProgress[i] * 1)
+                
+        g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
+
+        g:fill_ellipse(x- (radius/2),y- (radius/2), radius,radius)
+                
+         --  g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
+    
+        --  g:stroke_ellipse(x- (radius/2),y- (radius/2), radius,radius,1)
+    ::continue::
+    end
 end   
 
-  
+
 function Wave:paint_layer_7(g)
-   
+
     local bc = self.borderC
     g:set_color(bc[1], bc[2], bc[3], bc[4])
     g:stroke_rounded_rect(1, 1, self.width , self.height , 9, 2)
