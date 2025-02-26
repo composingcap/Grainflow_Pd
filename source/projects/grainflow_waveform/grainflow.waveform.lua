@@ -44,7 +44,7 @@ function Wave:initialize(sel, atoms)
     self.startIndex = 0
     self.arrayName = {}
     self.sizeH  =  self.height /  self.arrayAmount
-   
+
     --redraw speed
     self.delay_time = 20*2
     
@@ -101,7 +101,6 @@ end
 function Wave:tick()
 
     self:repaint(2)
- 
     self:repaint(4)  
     self:repaint(5)  
     self:repaint(6) 
@@ -112,9 +111,10 @@ end
 
 -- =====================================
 function Wave:mouse_down(x, y)
-    if self.mouseOn == false  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
-        self.mousePos[1] = normalize(x,0,self.width)
-        self.mousePos[2] = normalize(y,self.height,0)
+    local w, h = self:get_size()
+    if self.mouseOn == false  and x >= 0 and y >= 0  and x <= w and y <= h then
+        self.mousePos[1] = normalize(x,0,w)
+        self.mousePos[2] = normalize(y,h,0)
         self.readPosition = self.mousePos[1]
         self:outlet(1,"list" , self.mousePos)
         self:outlet(1,"list" , self.mousePos)
@@ -123,22 +123,24 @@ function Wave:mouse_down(x, y)
 end
 -- =====================================
 function Wave:mouse_drag(x, y)
-    if self.mouseOn  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
-        self.mousePos[1] = normalize(x,0,self.width)
-        self.mousePos[2] = normalize(y,self.height,0)
+    local w, h = self:get_size()
+    if self.mouseOn  and x >= 0 and y >= 0  and x <= w and y <= h then
+        self.mousePos[1] = normalize(x,0,w)
+        self.mousePos[2] = normalize(y,h,0)
         self.readPosition = self.mousePos[1]
         self:outlet(1,"list" , self.mousePos)
     end
 end
 -- =====================================
 function Wave:mouse_up(x, y)
-    if self.mouseOn  and x >= 0 and y >= 0  and x <= self.width and y <= self.height then
+    local w, h = self:get_size()
+    if self.mouseOn  and x >= 0 and y >= 0  and x <= w and y <= h then
         self.mouseOn = false
     end
 end
 -- =====================================
 function Wave:in_1_bang()
-   
+
 end
 -- =====================================
 function Wave:in_1(sel, atoms)
@@ -268,7 +270,7 @@ end
 -- =====================================
 function Wave:grainSize(atoms)
 -- store changes to size of grain circles with grainSize message
-    self.grainsize   = atoms[1]
+    self.grainSize   = atoms[1]
     self:save_state()
 
 end
@@ -392,9 +394,9 @@ function Wave:paint_layer_6(g)
         local x = grainPosition[i] * w
         local y = (((grainChannel[i] - 1) * sizeH) + ((1 - grainAmp[i]) * sizeH) + (sizeH * .1) + 4) * .8
 
-        local brighF = 1 - (grainProgress[i] * 1)
+        local bright = 1 - (grainProgress[i] * 1)
                 
-        g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
+        g:set_color( gc.r *bright, gc.g *bright, gc.b, gc.a)
 
         g:fill_ellipse(x- (radius/2),y- (radius/2), radius,radius)
                 
@@ -407,10 +409,10 @@ end
 
 
 function Wave:paint_layer_7(g)
-
+    local w, h = self:get_size()
     local bc = self.borderC
     g:set_color(bc[1], bc[2], bc[3], bc[4])
-    g:stroke_rounded_rect(1, 1, self.width , self.height , 9, 2)
+    g:stroke_rounded_rect(1, 1, w , h , 9, 2)
 
 end   
 --==============================================
