@@ -32,11 +32,11 @@ function Wave:initialize(sel, atoms)
     -- color values
     self.recordHeadC =  {r = 100,g = 100, b = 255,a = 1.0}
     self.waveformC = {r = 0,g = 0, b = 0,a = 1.0}
-    self.grainC = {r = 121,g = 115, b = 150,a = .5}
+    self.grainC = {r = 142,g = 199, b = 231,a = 0.5}
     self.mouseC = {r = 100,g = 100, b = 100,a = 1.0}
     self.backgroundC = {r = 255,g = 255, b = 255,a = 1.0}
     self.borderC = {r = 100,g = 100, b = 100,a = 1.0}
-    self.grainSize =  .1
+    self.grainSize =  1.0
     
     -- waveform array
     self.arrayAmount = 0
@@ -55,7 +55,10 @@ end
 -- =====================================
 function Wave:restore_state(atoms)
 
-if atoms and #atoms >= 27 then
+
+
+if atoms and # (atoms) == 27 then
+
     self.width       =  atoms[1]
     self.height      =  atoms[2]
     self.recordHeadC = { r = atoms[3],  g = atoms[4],  b = atoms[5],  a = atoms[6] }
@@ -63,12 +66,12 @@ if atoms and #atoms >= 27 then
     self.grainC      = { r = atoms[11],  g = atoms[12], b = atoms[13], a = atoms[14] }
     self.mouseC      = { r = atoms[15], g = atoms[16], b = atoms[17], a = atoms[18] }
     self.backgroundC = { r = atoms[19], g = atoms[20], b = atoms[21], a = atoms[22] }
-    self.borderC     = { atoms[23], atoms[24], atoms[25], atoms[26] }
+    self.borderC     = { r = atoms[23], g = atoms[24], b = atoms[25], a = atoms[26] }
     self.grainSize   = atoms[27]
     
     self:repaint()  
 else
-    pd.post("No valid state to restore; received " .. (atoms and #atoms or 0) .. " values.")
+   
 end
 end
 -- =====================================
@@ -85,6 +88,7 @@ function Wave:save_state()
     self.borderC.r,  self.borderC.g,  self.borderC.b,  self.borderC.a,
     self.grainSize
     }
+
     self:set_args(state)
     pd.post("State saved.")
 end
@@ -95,16 +99,17 @@ function Wave:postinitialize()
 end
 -- =====================================
 function Wave:finalize()
+    self:save_state()
     self.clock:destruct()
 end
 -- =====================================
 function Wave:tick()
 
     self:repaint(2)
+    self:repaint(3)  
     self:repaint(4)  
-    self:repaint(5)  
+    self:repaint(5) 
     self:repaint(6) 
-    self:repaint(7) 
     self.clock:delay(self.delay_time)
 
 end
@@ -222,16 +227,20 @@ function Wave:recordHeadSamps(atoms)
 
 end
 -- =====================================
+-- Color change settings ++++++++++++++
+
 function Wave:backgroundColor(atoms)
 -- store and change background color
+
     self.backgroundC = { r = atoms[1], g = atoms[2], b = atoms[3], a = atoms[4] }
     self:save_state()
+    self:repaint(1)
 end
 -- =====================================
 function Wave:borderColor(atoms)
 -- store and change boarder color
     self.borderC     = { r = atoms[1],  g = atoms[2],  b = atoms[3],  a = atoms[4]  }
-    self:repaint(7)
+
     self:save_state()
 end
 -- =====================================
@@ -277,9 +286,11 @@ end
 -- ===========Paint functions ==========
 -- =====================================
 function Wave:paint(g)
- -- paint only the background canvas layer   
+-- paint only the background canvas layer  
+    local bkc = self.backgroundC 
     local w, h = self:get_size()
-    g:set_color(self.backgroundC.r,self.backgroundC.g,self.backgroundC.b,self.backgroundC.a)
+    
+    g:set_color(bkc.r,bkc.g,bkc.b,bkc.a)
     g:fill_rect(0, 0, w, h)
 end
 -- ///////////////////////////////////
@@ -323,7 +334,7 @@ end
 
 -- ======================================================
 
-function Wave:paint_layer_4(g)
+function Wave:paint_layer_3(g)
     -- Cache the current state and clear it immediately
     local drawRec = self.drawRec
     self.drawRec = false
@@ -342,7 +353,7 @@ function Wave:paint_layer_4(g)
 
 end
 -- ======================================================
-function Wave:paint_layer_5(g)
+function Wave:paint_layer_4(g)
     local mouseOn = self.mouseOn
     local drawRec = self.drawRec
 
@@ -364,7 +375,7 @@ end
 
 
 -- ======================================================
-function Wave:paint_layer_6(g)
+function Wave:paint_layer_5(g)
 
     local amount = # (self.grainState)
     
@@ -384,31 +395,31 @@ function Wave:paint_layer_6(g)
 
 
     for i = 1, amount  do
-    
-        if not (grainState[i] == 1 and grainPosition[i]  and grainAmp[i] and grainChannel[i] and grainProgress[i]) then
-            goto continue
-        end    
-    
-        local radius = ( sizeH * .1) *  (1 - 2 * (grainProgress[i] - 0.5)^2)
-        
+        local radius = (( sizeH * .14) *  (1 - 2 * (grainProgress[i] - 0.5)^2)) * self.grainSize
         local x = grainPosition[i] * w
         local y = (((grainChannel[i] - 1) * sizeH) + ((1 - grainAmp[i]) * sizeH) + (sizeH * .1) + 4) * .8
-
-        local bright = 1 - (grainProgress[i] * 1)
-                
-        g:set_color( gc.r *bright, gc.g *bright, gc.b, gc.a)
-
+        local delta = 0.05  -- controls how much brighter/dimmer the circle gets
+        local f = 1 - 2 * (grainProgress[i] - 0.5)^2
+        -- Map f from [0.5, 1] to brightness factor in [1-delta, 1+delta]:
+        -- When f=0.5 => brightness = 1 - delta; when f=1 => brightness = 1 + delta.
+        local brightness = (f - 0.5) * (4 * delta) + (1 - delta)
+        if not (grainState[i] == 1 ) then
+        --if not (grainState[i] == 1 and grainPosition[i]  and grainAmp[i] and grainChannel[i] and grainProgress[i]) then
+            g:set_color(0, 0, 0, 0)
+            g:fill_rect(0, 0, 1, 1)
+            goto continue
+        end           
+        g:set_color( gc.r *brightness, gc.g *brightness, gc.b*brightness, gc.a)
         g:fill_ellipse(x- (radius/2),y- (radius/2), radius,radius)
-                
-         --  g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
-    
+        --  g:set_color( gc.r *brighF, gc.g *brighF, gc.b, gc.a)
         --  g:stroke_ellipse(x- (radius/2),y- (radius/2), radius,radius,1)
-    ::continue::
+        ::continue::
+
     end
 end   
 
 
-function Wave:paint_layer_7(g)
+function Wave:paint_layer_6(g)
     local w, h = self:get_size()
     local bc = self.borderC
     g:set_color(bc.r,bc.g,bc.b,bc.a)
