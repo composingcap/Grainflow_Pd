@@ -1,0 +1,9 @@
+PROJECT("grainflow_waveform")
+
+#This expects the target grainflow.waveform.lua and the help file grainflow.waveform-help.pd in this folder. 
+#Other assets should go in assets or extras 
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/grainflow.waveform.lua" DESTINATION "${PD_OUTPUT_PATH}")
+file(RENAME "${PD_OUTPUT_PATH}/grainflow.waveform.lua" "${PD_OUTPUT_PATH}/grainflow.waveform.pd_lua")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/grainflow.waveform-help.pd" DESTINATION "${PD_OUTPUT_PATH}")
+
+
