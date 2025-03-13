@@ -16,9 +16,9 @@ Grainflow is a powerful granulation tool build for Max designed to be as flexibl
 - Provides detailed grain information 
 
 ## Nightly Releases
-- Win: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-windows-latest.zip
-- Mac: https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-macos-latest.zip
-- CI build for linux currently is not working
+- [Win](https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-windows-latest.zip)
+- [Mac](https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-macos-latest.zip)
+- [Linux](https://nightly.link/composingcap/Grainflow_Pd/workflows/cmake-multi-platform/master/Grainflow-ubuntu-latest.zip)
 
 ## How to contribute
 Grainflow is open to contributions both in terms of examples, abstractions, and help file improvements as well as help with the C++ codebase in `./source` and the [GrainflowLib](https://github.com/composingcap/GrainflowLib) repository. \
