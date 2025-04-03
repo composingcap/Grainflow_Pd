@@ -134,17 +134,23 @@ namespace Grainflow
 
 		static void sample_buffer(pd_buffer* buffer, const int channel, t_sample* __restrict samples,
 		                          const t_sample* positions,
-		                          const int size)
+		                          const int size, const float lower_bound, const float upper_bound)
 		{
 			t_int bsize{0};
 			t_word* vec;
 	
 			if (!buffer->get_channel(channel, &bsize, &vec)) return;
+			const int max_frame = bsize-1;
+			const int lower_frame = max_frame * lower_bound;
+			const int upper_frame = max_frame * upper_bound;
 			
 			for (int i = 0; i < size; ++i)
 			{
-				auto mix = positions[i]- std::floor(positions[i]);
-				samples[i] = vec[(int)(positions[i]) % bsize].w_float * (1-mix) + vec[(int)(positions[i]+1) % bsize].w_float * mix;
+				const int first_frame = std::floor(positions[i]);
+				auto mix = positions[i]- first_frame;
+				const bool frame_overflow = first_frame >= upper_frame;
+				const int second_frame = (first_frame + 1) * !frame_overflow + lower_frame * frame_overflow;		
+				samples[i] = vec[first_frame].w_float * (1-mix) + vec[second_frame].w_float * mix;
 			}
 		};
 
