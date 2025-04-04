@@ -26,7 +26,7 @@ You must have [cmake](https://cmake.org/) and both a c and cpp compiler.
 Currently Grainflow PD is know to build on
 - Windows 10 and greater using MSVC
 - ARM Mac using clang
-- Ubuntu Arm64 systems using gcc
+- Ubuntu Arm64 systems using gcc and g++
 
 ### 1) Clone this repo 
 ```
@@ -42,7 +42,7 @@ cp {path-to-pd}/bin/pthreadVC.dll {path-to-repo}/source/pure-data/src/
 ### 3) Build
 If you are not in the Grainflow_Pd repo, cd to that location
 ```
-cd /Grainflow_Pd
+cd ./Grainflow_Pd
 ```
 Configure the project and build
 ```
