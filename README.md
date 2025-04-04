@@ -1,4 +1,4 @@
-Grainflow is a powerful granulation tool build for Max designed to be as flexible as possible to allow for rapid experimentation with granulation. Grainflow is a synchronous and sample accurate granulator what also is offering a toolkit of vast customization. 
+Grainflow is a powerful granulation tool designed to be as flexible as possible to allow for rapid experimentation with granulation. Grainflow is a synchronous and sample accurate granulator what also is offering a toolkit of vast customization. 
 
 
 ## Key Features
@@ -55,8 +55,4 @@ cmake --build .
 ## How to contribute
 Grainflow is open to contributions both in terms of examples, abstractions, and help file improvements as well as help with the C++ codebase in `./source` and the [GrainflowLib](https://github.com/composingcap/GrainflowLib) repository. \
 Additionally, please post any feature requests to [Issues](https://github.com/composingcap/Grainflow_pd/issues) or the [Grainflow Discord](https://discord.gg/8RUUUvjVgK). \
-We are also happy to assist in implementation of GrainflowLib outside of Max and am planning to target other platforms as I have time. 
-## Building from source
-Building from source is the best way to ensure you get the most up-to-date changes
-
 
