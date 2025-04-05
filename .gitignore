@@ -2,3 +2,6 @@
 externals
 .vscode
 grainflow
+.secrets
+source/.DS_Store
+*.DS_Store
