@@ -81,3 +81,30 @@ jobs:
         compression-level: 6
         overwrite: true
         include-hidden-files: false
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+      - name: download-win-externals
+        uses: actions/download-artifact@v4
+        with: 
+          name: Grainflow-windows-latest
+          path: ./grainflow
+      - name: download-mac-externals   
+        uses: actions/download-artifact@v4
+        with: 
+          name: Grainflow-macos-latest
+          path: ./grainflow
+      - name: download-ubuntu-externals   
+        uses: actions/download-artifact@v4
+        with: 
+          name: Grainflow-ubuntu-latest
+          path: ./grainflow
+      - name: Upload-MaxPack
+        uses: actions/upload-artifact@v4
+        with:
+          name: GrainflowPackage
+          path: ./grainflow
