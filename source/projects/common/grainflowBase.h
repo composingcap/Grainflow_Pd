@@ -93,6 +93,7 @@ class Grainflow_Base{
 	std::array<iolet, 8> outlet_data;
 	grain_info grain_data;
 	t_clock* data_clock;
+	bool quiet_mode = false;
 
 	bool data_update;
 	bool data_update_in_progress= false;
@@ -107,7 +108,7 @@ class Grainflow_Base{
     static void on_data_clock(int* w)
     {
         auto x = reinterpret_cast<T*>(w);
-		if (x->grain_collection == nullptr)
+		if (x->grain_collection == nullptr || x->quiet_mode)
 		{
 			clock_delay(x->data_clock, 33);
 			return;
@@ -150,6 +151,11 @@ class Grainflow_Base{
 	{
 		if(av[0].a_type!= A_FLOAT) {return;}
 		message_float(x,av[0].a_w.w_float);
+		return;
+	}
+	if (strcmp(s->s_name, "quiet") == 0){
+		if(av[0].a_type!= A_FLOAT) {return;}
+		set_quiet(x,av[0].a_w.w_float);
 		return;
 	}
 	int start = 0;
@@ -291,6 +297,7 @@ static void arg_parse(T* x, int ac, t_atom* av)
 
 static void collect_array_info(T* x){
 
+	if (x->quiet_mode) return;
 	if (x->grain_collection == nullptr || x->grain_collection->grains() < 1 || x->update_buffers_next_frame) { return; }
 	x->update_buffers_next_frame = true;
 	auto& arrays = x->grain_collection->get_buffer(gf_buffers::buffer, 0)->channel_arrays;
@@ -508,6 +515,10 @@ static void set_ngrains(T* x, t_floatarg f)
 static void set_auto_overlap(T* x, t_floatarg f)
 {
 	x->grain_collection->set_auto_overlap(f >= 1);
+}
+
+static void set_quiet(T* x, t_floatarg f){
+	x->quiet_mode = f >= 1;
 }
 
 static void grainflow_free(T* x)
