@@ -7,13 +7,25 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 set(CMAKE_MACOSX_RPATH ON)
 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 if(UNIX AND NOT APPLE)
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra")
     set(CMAKE_BUILD_RPATH "$ORIGIN")
     set(CMAKE_INSTALL_RPATH "$ORIGIN")
+
 endif()
 if(APPLE)
     set(CMAKE_BUILD_RPATH "@loader_path")
     set(CMAKE_INSTALL_RPATH "@loader_path")
+endif()
+if (WIN32)
+
 endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
