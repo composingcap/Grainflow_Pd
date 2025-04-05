@@ -23,8 +23,8 @@ You can get the most up to date nightly releases [here](https://nightly.link/com
 You must have [cmake](https://cmake.org/) and both a c and cpp compiler.
 Currently Grainflow PD is know to build on
 - Windows 10 and greater using MSVC
-- ARM Mac using clang
-- Ubuntu Arm64 systems using gcc and g++
+- Arm Mac using clang
+- Ubuntu Amd64 and Arm64 systems using gcc and g++
 
 ### 1) Clone this repo 
 ```
