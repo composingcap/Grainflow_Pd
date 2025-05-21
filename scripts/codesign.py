@@ -9,7 +9,6 @@ import re
 
 
 keystorePath = "./.secrets/keystore.json"
-paths_to_include  = ["/code", "/data", "/docs", "/help", "/javascript", "/jsui", "/externals", "/media", "/misc", "/patchers", "/extras", "/icon.png", "/license.txt", "/README.md", "/package-info.json"]
 externals = []
 mac_externals = []
 
@@ -34,7 +33,7 @@ def macos_codesign():
         shutil.rmtree(dest)
     os.mkdir(dest)
 
-    externals = os.listdir("./externals")
+    externals = os.listdir("./grainflow")
     mac_externals =  [ s for s in externals if re.search(r"\.darwin-fat-32.so$", s) ]
 
 
@@ -45,7 +44,7 @@ def macos_codesign():
         cmd = f'sudo codesign -s {macoskey} --options runtime --timestamp --force --deep  -f {ex_path}'
         p = subprocess.Popen(cmd, shell=True)  
         p.wait()
-        shutil.copytree(ex_path, dest + f'/{external}')
+        shutil.copy(ex_path, dest + f'/{external}')
         
 
         
@@ -65,28 +64,28 @@ def macos_codesign():
     p = subprocess.Popen(cmd, shell=True)  
     p.wait()
     for external in mac_externals:
-        shutil.rmtree(f'./externals/{external}')
-    shutil.unpack_archive(archive+".zip", "./externals")
+        os.remove(f'./grainflow/{external}')
+    shutil.unpack_archive(archive+".zip", "./grainflow")
     mac_staple()
     shutil.rmtree(dest)
     os.remove(archive+".zip")
 
 def mac_staple():
     if (platform.system() != "Darwin"): return
-    externals = os.listdir("./externals")
+    externals = os.listdir("./grainflow")
     mac_externals =  [ s for s in externals if re.search(r"\.darwin-fat-32.so$", s) ]
     for external in mac_externals:
-        cmd = f'xcrun stapler staple ./externals/{external}'
+        cmd = f'xcrun stapler staple ./grainflow/{external}'
         p = subprocess.Popen(cmd, shell=True)
         p.wait()  
 
 def mac_validate():
     if (platform.system() != "Darwin"): return
-    externals = os.listdir("./externals")
+    externals = os.listdir("./grainflow")
     mac_externals =  [ s for s in externals if re.search(r"\.darwin-fat-32.so$", s) ]
     for external in mac_externals:
         print(f"===== {external} ======")
-        cmd = f'codesign -dv --verbose=4 ./externals/{external}'
+        cmd = f'codesign -dv --verbose=4 ./grainflow/{external}'
         p = subprocess.Popen(cmd, shell=True)  
         p.wait()
         print("\n")
