@@ -49,6 +49,30 @@ namespace Grainflow
 			x->recorder->overdub = std::clamp(av[0].a_w.w_float, 0.0f, 1.0f);
 		}
 
+		static void message_overdubFilters(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
+		{
+			if (ac < 3) { 
+				x->recorder->set_n_filters(0);
+				return; 
+			}
+			x->recorder->set_n_filters(ac/3);
+			for (int i = 0; i < ac/3 ; ++i){
+				auto& freq = av[i*3+0];
+				auto& q = av[i*3+1];
+				auto& dub = av[i*3+2];
+
+				if (freq.a_type != A_FLOAT || q.a_type != A_FLOAT || dub.a_type != A_FLOAT){
+					return;
+				}
+				x->recorder->set_filter_params(i, freq.a_w.w_float,q.a_w.w_float,dub.a_w.w_float);
+			}
+			x->recorder->pre_process_filters();
+		}
+
+		static void message_clear(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av){
+			x->recorder->clear(x->grain_collection->get_buffer(Grainflow::gf_buffers::buffer, 0));
+		}
+
 		static void message_freeze(Grainflow_Live_Tilde* x, t_symbol* s, int ac, t_atom* av)
 		{
 			if (ac < 1) { return; }
@@ -82,6 +106,7 @@ namespace Grainflow
 			x->additional_args.push_back({gensym("rec"), &message_record});
 			x->additional_args.push_back({gensym("freeze"), &message_freeze});
 			x->additional_args.push_back({gensym("play"), &message_play});
+			x->additional_args.push_back({gensym("overdubFilters"), &message_overdubFilters});
 			x->data_clock_ex.push_back(&on_data_loop);
 			x->update_buffers_each_frame = true;
 			auto ptr = grainflow_create(x, ac, av);
@@ -231,6 +256,8 @@ namespace Grainflow
 			                A_GIMME, 0);
 
 
+			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_clear), gensym("clear"),
+			                A_GIMME, 0);
 			class_addmethod(grainflow_live_class, reinterpret_cast<t_method>(message_anything), gensym("anything"),
 			                A_GIMME, 0);
 		}

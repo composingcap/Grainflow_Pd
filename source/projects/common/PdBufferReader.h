@@ -155,8 +155,7 @@ namespace Grainflow
 		};
 
 		static void write_buffer(pd_buffer* buffer, const int channel, const t_sample* samples,
-		                         t_sample* __restrict scratch,
-		                         const int start_position, const float overdub, const int size)
+		                         const int start_position, const int size)
 		{
 			if (buffer == nullptr) return;
 			t_int frames{ 0 };
@@ -166,46 +165,21 @@ namespace Grainflow
 			if (!buffer->get_channel(channel, &frames,&vec, true)) return;
 
 			auto is_segmented = (start_position + size) >= frames;
-			auto use_overdub = overdub >= 0.0001f;
 
-			if (use_overdub)
-			{
-				if (!is_segmented)
-				{
-					for (int i = 0; i < size; i++)
-					{
-						scratch[i] = vec[(start_position + i)].w_float * overdub;
-					}
-				}
-				else
-				{
-					for (int i = 0; i < size; i++)
-					{
-						scratch[i] = vec[(((start_position + i) % frames))].w_float * overdub;
-					}
-				}
-			}
-			else
-			{
-				memset(scratch, 0.0, sizeof(t_sample) * size);
-			}
 
 			if (!is_segmented)
 			{
 				for (int i = 0; i < size; i++)
 				{
-					vec[(start_position + i)].w_float = samples[i] * (1 - overdub) + scratch[i];
+					vec[(start_position + i)].w_float = samples[i];
 				}
 				return;
 			}
 			auto first_chunk = (start_position + size) - frames;
 			for (int i = 0; i < size; i++)
 			{
-				vec[(((start_position + i) % frames))].w_float = samples[i] * (1 - overdub) +
-					scratch[i];
+				vec[(((start_position + i) % frames))].w_float = samples[i];
 			}
-
-
 		};
 
 
@@ -246,6 +220,42 @@ namespace Grainflow
 			}			
 		};
 
+		static void read_buffer(pd_buffer* buffer, const int channel, t_sample* __restrict samples,
+		                          int start_sample,
+		                          const int size)
+		{
+			t_int bsize{0};
+			t_word* vec;
+	
+			if (!buffer->get_channel(channel, &bsize, &vec)) return;
+			auto is_segmented = (start_sample + size) >= bsize;
+
+			if (!is_segmented)
+			{
+				for (int i = 0; i < size; ++i)
+				{		
+					samples[i] = vec[start_sample+i].w_float;
+				}
+			}
+			else{
+				for (int i = 0; i < size; ++i)
+				{		
+					samples[i] = vec[(start_sample+i) % bsize ].w_float;
+				}
+			}
+		};
+
+		static void clear_buffer(pd_buffer* buffer){
+			t_int bsize{ 0 };
+			t_word* vec;
+			if (!buffer->get(&bsize, &vec)) return;
+			for (int i = 0; i < bsize; i++)
+				{
+					vec[i].w_float = 0.0;
+				}
+			
+		}
+
 		static gf_i_buffer_reader<pd_buffer, t_sample> get_buffer_reader()
 		{
 			gf_i_buffer_reader<pd_buffer, t_sample> _bufferReader;
@@ -254,6 +264,8 @@ namespace Grainflow
 			_bufferReader.update_buffer_info = pd_buffer_reader::update_buffer_info;
 			_bufferReader.sample_param_buffer = pd_buffer_reader::sample_param_buffer;
 			_bufferReader.write_buffer = pd_buffer_reader::write_buffer;
+			_bufferReader.clear_buffer = pd_buffer_reader::clear_buffer;
+			_bufferReader.read_buffer = pd_buffer_reader::read_buffer;
 			return _bufferReader;
 		}
 	};
