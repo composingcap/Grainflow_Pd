@@ -322,7 +322,7 @@ static void* grainflow_create(T* x, int ac, t_atom* av)
 {
 	if (ac < 2)
 	{
-		pd_error(x, "grainflow: must be instantiated with two arguments- buffer-name ngrains", "");
+		pd_error(x, "grainflow: must be instantiated with two arguments- buffer-name ngrains");
 		return (void*)x;
 	}
 

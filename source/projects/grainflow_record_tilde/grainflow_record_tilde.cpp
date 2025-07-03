@@ -1,4 +1,3 @@
-#pragma once
 #include <m_pd.h>
 #include <algorithm>
 #include <vector>

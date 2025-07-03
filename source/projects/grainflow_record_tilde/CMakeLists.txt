@@ -21,5 +21,6 @@ set(ASSETS
 ${CMAKE_CURRENT_SOURCE_DIR}/grainflow.record~-help.pd
 )
 
+
 file(COPY ${ASSETS} DESTINATION ${PD_OUTPUT_PATH})
 

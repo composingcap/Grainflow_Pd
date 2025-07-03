@@ -21,14 +21,3 @@ ${CMAKE_CURRENT_SOURCE_DIR}/grainflow~-help.pd
 ${CMAKE_CURRENT_SOURCE_DIR}/mc_fm.pd )
 
  file(COPY ${ASSETS} DESTINATION ${PD_OUTPUT_PATH})
-
-# set(RELFLAGS )
-# if (MSVC)
-# set(RELFLAGS /Oi /O2 /Ot /Ob2)
-# endif()
-# if(APPLE)
-# set(RELFLAGS -Ofast)
-# endif()
-# target_compile_options(${PROJECT_NAME} PRIVATE
-# "$<$<CONFIG:Release>:${RELFLAGS}>"
-# )

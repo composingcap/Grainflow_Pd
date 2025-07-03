@@ -17,5 +17,6 @@ ADD_PD_EXTERNAL(
  set(ASSETS
  ${CMAKE_CURRENT_SOURCE_DIR}/grainflow.stereoPan~-help.pd
  )
- 
+
+
   file(COPY ${ASSETS} DESTINATION ${PD_OUTPUT_PATH})
