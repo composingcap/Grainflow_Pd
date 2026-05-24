@@ -25,7 +25,7 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH "@loader_path")
 endif()
 if (WIN32)
-
+    add_compile_definitions(_USE_MATH_DEFINES)
 endif()
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")

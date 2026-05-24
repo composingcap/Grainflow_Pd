@@ -14,7 +14,7 @@ mac_externals = []
 
 
 
-def macos_codesign():
+def macos_codesign(adhoc:bool = False):
     if (platform.system() != "Darwin"):
         print("not on mac os and connot sign")
         return
@@ -27,17 +27,25 @@ def macos_codesign():
         print("err: not valid key found")
         return
     
+    externals = os.listdir("./grainflow")
+    mac_externals =  [ s for s in externals if re.search(r"\.darwin-fat-32.so$", s) ]
+    print(mac_externals)
+
+    if adhoc:
+        if (len(mac_externals) <= 0): return 
+        for external in mac_externals:
+            ex_path = f'./grainflow/{external}'
+            cmd = f'sudo codesign -s - --options runtime --timestamp --force --deep  -f {ex_path}'
+            p = subprocess.Popen(cmd, shell=True)  
+            p.wait()
+        return
+
     dest = "./grainflow/grainflowExternals_temp"
     archive = "./grainflow/grainflowExternals"
     if os.path.isdir(dest): 
         shutil.rmtree(dest)
     os.mkdir(dest)
 
-    externals = os.listdir("./grainflow")
-    mac_externals =  [ s for s in externals if re.search(r"\.darwin-fat-32.so$", s) ]
-
-
-    print(mac_externals)
     if (len(mac_externals) <= 0): return 
     for external in mac_externals:
         ex_path = f'./grainflow/{external}'
@@ -91,7 +99,7 @@ def mac_validate():
         print("\n")
 
 def main():
-    macos_codesign()
+    macos_codesign(adhoc=False)
     mac_staple()
     mac_validate()
 

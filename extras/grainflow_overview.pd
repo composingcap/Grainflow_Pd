@@ -1,4 +1,6 @@
-#N canvas 835 236 734 565 12;
+#N canvas 387 238 734 565 12;
+#X declare -path ../;
+#X declare -lib pdlua -path pdlua;
 #X obj 18 117 grainflow~ 0 0;
 #X obj 18 151 grainflow.live~ 0 0;
 #X obj 18 185 grainflow.record~;
@@ -19,10 +21,11 @@
 #X obj 213 451 bng 25 250 50 0 empty empty empty 17 7 0 10 #e4e4e4 #4d4d4d #373737;
 #X text 251 457 <= Discord;
 #X msg 213 485 browse https://discord.gg/8RUUUvjVgK;
-#X obj 13 284 grainflow.waveform;
+#X obj 17 286 grainflow.waveform;
 #X text 336 283 <- grainflow.waveform;
-#X obj 328 348 pdlua;
 #X obj 27 415 grainflow_examples;
+#X obj 369 8 declare -path ../;
+#X obj 499 8 declare -lib pdlua -path pdlua;
 #X connect 14 0 11 0;
 #X connect 15 0 14 0;
 #X connect 17 0 19 0;
